@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-black text-gray-900 tracking-tight">PEDIDOS EN COCINA</h1>
+                <p class="text-gray-500">Gestión de comandas en tiempo real</p>
+            </div>
+            <div class="bg-green-500 h-3 w-3 rounded-full animate-ping" title="Servidor Activo"></div>
+        </header>
+
+        <div id="grid-pedidos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="col-span-full text-center py-20 text-gray-400 font-medium">Cargando pedidos pendientes...</div>
+        </div>
+    </div>
+
+    <script>
+        async function cargarPedidos() {
+            try {
+                const res = await fetch('http://localhost:3000/admin/pedidos');
+                const pedidos = await res.json();
+                
+                const grid = document.getElementById('grid-pedidos');
+                
+                if (pedidos.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full text-center py-20 bg-white rounded-2xl shadow-sm text-gray-400">No hay pedidos pendientes en este momento.</div>';
+                    return;
+                }
+
+                grid.innerHTML = pedidos.map(p => `
+                    <div class="bg-white rounded-2xl shadow-sm border-l-8 ${getEstadoColor(p.estado)} p-5 flex flex-col transition-all hover:shadow-md">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-gray-900 text-white px-3 py-1 rounded-lg text-xl font-black">MESA ${p.mesa}</span>
+                                <p class="text-[10px] text-gray-400 mt-2 uppercase font-bold">Orden #${p.id} • ${new Date(p.fecha).toLocaleTimeString()}</p>
+                            </div>
+                            <span class="font-black text-lg text-gray-800">$${parseFloat(p.total).toLocaleString()}</span>
+                        </div>
+
+                        <div class="flex-1 space-y-2 mb-6">
+                            ${p.items.map(item => `
+                                <div class="flex justify-between text-sm border-b border-gray-50 pb-1">
+                                    <span class="text-gray-600"><b class="text-gray-900">${item.cantidad}x</b> ${item.nombre}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="mt-auto">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase mb-2 block">Cambiar Estado</label>
+                            <select onchange="actualizarEstado(${p.id}, this.value)" 
+                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="pendiente" ${p.estado === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
+                                <option value="cocinando" ${p.estado === 'cocinando' ? 'selected' : ''}>👨‍🍳 En Cocina</option>
+                                <option value="listo" ${p.estado === 'listo' ? 'selected' : ''}>✅ Listo p/ Entrega</option>
+                                <option value="finalizado" ${p.estado === 'finalizado' ? 'selected' : ''}>🏁 Finalizado</option>
+                            </select>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error("Error al cargar pedidos:", error);
+            }
+        }
+
+        async function actualizarEstado(id, nuevoEstado) {
+            try {
+                const res = await fetch(`http://localhost:3000/pedidos/${id}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({estado: nuevoEstado})
+                });
+                
+                if (res.ok) {
+                    cargarPedidos(); // Refrescar vista
+                } else {
+                    alert("No se pudo actualizar el estado.");
+                }
+            } catch (e) { 
+                alert("Error de conexión al actualizar."); 
+            }
+        }
+
+        function getEstadoColor(estado) {
+            switch(estado) {
+                case 'pendiente': return 'border-yellow-400';
+                case 'cocinando': return 'border-orange-500';
+                case 'listo': return 'border-green-500';
+                default: return 'border-gray-200';
+            }
+        }
+
+        // Carga inicial y auto-refresco cada 15 segundos
+        cargarPedidos();
+        setInterval(cargarPedidos, 15000);
+    </script>
+</body>
+</html>
