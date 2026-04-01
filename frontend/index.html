@@ -27,8 +27,7 @@
     </header>
 
     <main class="max-w-2xl mx-auto p-4">
-        <div id="categories" class="flex gap-2 overflow-x-auto no-scrollbar mb-6 py-2">
-            <button onclick="filtrar('Todos')" class="category-pill active px-4 py-2 rounded-full bg-white shadow-sm text-sm font-medium whitespace-nowrap">Todos</button>
+        <div id="categories" class="flex gap-2 overflow-x-auto no-scrollbar py-2 px-4 mb-4">
             </div>
 
         <div id="menu-grid" class="grid grid-cols-2 gap-4">
@@ -74,19 +73,47 @@
             try {
                 const res = await fetch('http://localhost:3000/menu');
                 menuData = await res.json();
+                
+                // LIMPIEZA CRUCIAL: Borra el mensaje de error o carga antes de renderizar
+                document.getElementById('menu-grid').innerHTML = ''; 
+                
                 generarCategorias();
                 renderMenu(menuData);
             } catch (e) {
+                console.error("Error al cargar:", e);
                 document.getElementById('menu-grid').innerHTML = '<p class="col-span-full text-center py-10">Error al conectar con el servidor.</p>';
             }
         }
 
         function generarCategorias() {
-            const cats = ['Todos', ...new Set(menuData.map(p => p.categoria))];
             const container = document.getElementById('categories');
-            container.innerHTML = cats.map(c => `
-                <button onclick="filtrar('${c}')" class="category-pill ${c==='Todos'?'active':''} px-4 py-2 rounded-full bg-white shadow-sm text-sm font-medium whitespace-nowrap">${c}</button>
-            `).join('');
+            
+            // Si el contenedor no existe, detenemos la función para que no de error
+            if (!container) return;
+
+            // Creamos la lista de categorías únicas de tu base de datos
+            const cats = ['Todos', 'Recomendados', ...new Set(menuData.map(p => p.categoria))];
+            
+            container.innerHTML = cats.map(c => {
+                let texto = c;
+                let claseExtra = "";
+                
+                if (c === 'Recomendados') {
+                    texto = "⭐ Recomendados";
+                    claseExtra = "text-red-600 font-bold";
+                } else if (c === 'Pizzas') {
+                    texto = "🍕 Pizzas";
+                } else if (c === 'Bebidas') {
+                    texto = "🥤 Bebidas";
+                }
+
+                return `
+                    <button onclick="filtrar('${c}')" 
+                        class="category-pill ${c === 'Todos' ? 'active' : ''} ${claseExtra} px-6 py-2 bg-white rounded-full text-sm font-bold shadow-sm whitespace-nowrap">
+                        ${texto}
+                    </button>
+                `;
+            }).join('');
         }
 
         function renderMenu(items) {
@@ -98,7 +125,7 @@
                         <h3 class="font-bold text-sm text-gray-800 leading-tight">${p.nombre}</h3>
                         <p class="text-xs text-gray-400 mt-1 flex-1">${p.descripcion || ''}</p>
                         <div class="flex justify-between items-center mt-3">
-                            <span class="font-black text-red-600">$${parseFloat(p.precio).toLocaleString()}</span>
+                            <span class="font-black text-red-600">$${(parseFloat(p.precio) || 0).toFixed(2)}</span>
                             <button onclick="agregar('${p.id}')" class="bg-gray-900 text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">+</button>
                         </div>
                     </div>
@@ -185,10 +212,29 @@
         function abrirCarrito() { document.getElementById('cart-drawer').classList.remove('hidden'); }
         function cerrarCarrito() { document.getElementById('cart-drawer').classList.add('hidden'); }
         function filtrar(cat) {
-            renderMenu(cat === 'Todos' ? menuData : menuData.filter(p => p.categoria === cat));
-            document.querySelectorAll('.category-pill').forEach(b => b.classList.toggle('active', b.innerText === cat));
-        }
+            let productosFiltrados;
 
+            if (cat === 'Todos') {
+                productosFiltrados = menuData;
+            } else if (cat === 'Recomendados') {
+                // Aquí filtramos por la columna booleana que añadimos ayer
+                productosFiltrados = menuData.filter(p => p.es_recomendado === true);
+            } else {
+                // Filtro normal por nombre de categoría
+                productosFiltrados = menuData.filter(p => p.categoria === cat);
+            }
+
+            renderMenu(productosFiltrados);
+
+            // Lógica para que el botón se vea "activo" (rojo) al hacer clic
+            document.querySelectorAll('.category-pill').forEach(btn => {
+                // Limpiamos el texto para comparar (quitamos emojis para que no falle)
+                const btnText = btn.innerText.replace(/[^\w]/g, ''); 
+                const catClean = cat.replace(/[^\w]/g, '');
+                
+                btn.classList.toggle('active', btnText.includes(catClean));
+            });
+        }
         cargarMenu();
     </script>
 </body>

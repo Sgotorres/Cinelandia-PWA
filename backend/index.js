@@ -21,24 +21,20 @@ app.get('/menu', async (req, res) => {
     }
 });
 
-// --- RUTA 2: RECIBIR PEDIDOS DESDE LA MESA ---
+// --- RUTA 2: RECIBIR PEDIDOS ---
 app.post('/pedidos', async (req, res) => {
-    // Usamos 'mesa' para ser genéricos
     const { carrito, mesa } = req.body; 
     
     if (!carrito || carrito.length === 0 || !mesa) {
-        return res.status(400).json({ error: "Faltan datos en el pedido (carrito o mesa)" });
+        return res.status(400).json({ error: "Faltan datos en el pedido" });
     }
 
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
-
-        // Calcular el total asegurándonos de que los nombres de propiedad coincidan con el frontend
         const total = carrito.reduce((sum, item) => sum + (item.cantidad * item.precio_unitario), 0);
 
-        // Insertar en la tabla 'pedidos' (Asegúrate de haber renombrado la columna a 'mesa' en pgAdmin)
         const pedidoRes = await client.query(
             'INSERT INTO pedidos (mesa, total, estado) VALUES ($1, $2, $3) RETURNING id',
             [mesa, total, 'pendiente']
@@ -46,7 +42,6 @@ app.post('/pedidos', async (req, res) => {
         
         const pedidoId = pedidoRes.rows[0].id;
 
-        // Insertar cada producto en detalles_pedido
         for (const item of carrito) {
             await client.query(
                 'INSERT INTO detalles_pedido (pedido_id, producto_id, cantidad, precio_unitario) VALUES ($1, $2, $3, $4)',
@@ -55,22 +50,16 @@ app.post('/pedidos', async (req, res) => {
         }
 
         await client.query('COMMIT');
-        
-        res.status(201).json({ 
-            mensaje: 'Pedido recibido con éxito', 
-            pedidoId: pedidoId 
-        });
-
+        res.status(201).json({ mensaje: 'Pedido recibido', pedidoId });
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error('Error procesando pedido:', err);
-        res.status(500).json({ error: "Error interno al guardar el pedido" });
+        res.status(500).json({ error: "Error interno" });
     } finally {
         client.release();
     }
 });
 
-// --- RUTA 3: PANEL DE ADMINISTRADOR ---
+// --- RUTA 3: PANEL ADMIN (PEDIDOS ACTIVOS) ---
 app.get('/admin/pedidos', async (req, res) => {
     try {
         const query = `
@@ -89,11 +78,37 @@ app.get('/admin/pedidos', async (req, res) => {
         const result = await pool.query(query);
         res.json(result.rows);
     } catch (err) {
-        console.error('Error en panel admin:', err);
         res.status(500).json({ error: "Error al obtener pedidos" });
     }
 });
 
+// --- NUEVA RUTA: ESTADÍSTICAS (PARA LA PESTAÑA HISTORIAL) ---
+app.get('/admin/stats-hoy', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                COUNT(*) as total_pedidos,
+                COALESCE(SUM(total), 0) as ingresos_totales,
+                (SELECT pr.nombre 
+                 FROM detalles_pedido dp 
+                 JOIN productos pr ON dp.producto_id = pr.id 
+                 JOIN pedidos p2 ON dp.pedido_id = p2.id
+                 WHERE p2.fecha::date = CURRENT_DATE
+                 GROUP BY pr.nombre 
+                 ORDER BY SUM(dp.cantidad) DESC 
+                 LIMIT 1) as top_producto
+            FROM pedidos 
+            WHERE fecha::date = CURRENT_DATE;
+        `;
+        const result = await pool.query(query);
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error en estadísticas" });
+    }
+});
+
+// --- ACTUALIZAR ESTADO DEL PEDIDO ---
 app.patch('/pedidos/:id', async (req, res) => {
     const { id } = req.params;
     const { estado } = req.body;
@@ -105,7 +120,18 @@ app.patch('/pedidos/:id', async (req, res) => {
     }
 });
 
-// Iniciar servidor
+// --- NUEVA RUTA: ACTUALIZAR PRODUCTO (RECOMENDADOS) ---
+app.patch('/productos/:id', async (req, res) => {
+    const { id } = req.params;
+    const { es_recomendado } = req.body;
+    try {
+        await pool.query('UPDATE productos SET es_recomendado = $1 WHERE id = $2', [es_recomendado, id]);
+        res.json({ mensaje: 'Producto actualizado' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al actualizar producto' });
+    }
+});
+
 app.listen(PORT, () => {
-    console.log(`✅ Servidor de Sistemas-Pedidos activo en puerto ${PORT}`);
+    console.log(`✅ Servidor activo en puerto ${PORT}`);
 });
