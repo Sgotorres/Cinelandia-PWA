@@ -11,81 +11,143 @@
         .tab-btn:not(.active):hover { background-color: #f3f4f6; }
         .tab-content.hidden { display: none; }
     </style>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#dc2626">
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-    <nav class="bg-white shadow-md sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl font-black text-red-600 tracking-tighter">ADMIN PANEL</span>
-                    <div class="bg-green-500 h-2 w-2 rounded-full animate-pulse"></div>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="verTab('tab-pedidos')" class="tab-btn active text-xs md:text-sm font-bold px-3 py-2 rounded-lg transition">📋 Pedidos</button>
-                    <button onclick="verTab('tab-inventario')" class="tab-btn text-xs md:text-sm font-bold px-3 py-2 rounded-lg transition">🍕 Inventario</button>
-                    <button onclick="verTab('tab-historial')" class="tab-btn text-xs md:text-sm font-bold px-3 py-2 rounded-lg transition">📊 Historial</button>
-                </div>
-            </div>
+    <div id="pantalla-login" class="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center z-[100] transition-opacity duration-500">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-11/12 max-w-md text-center">
+            <h1 class="text-3xl font-black text-red-600 mb-1 tracking-tighter">ADMIN PANEL</h1>
+            <p class="text-gray-500 mb-8 text-sm font-medium">Acceso exclusivo para el personal</p>
+            
+            <input type="password" id="input-pass" placeholder="Ingresa la contraseña" 
+                   class="w-full bg-gray-50 border-2 border-gray-100 text-center font-bold text-lg rounded-xl p-4 mb-4 focus:ring-2 focus:ring-red-500 outline-none transition-all">
+            
+            <button onclick="iniciarSesion()" class="w-full bg-red-600 text-white font-black py-4 rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200">
+                ENTRAR A COCINA
+            </button>
+            <p id="error-login" class="text-red-500 text-sm font-bold mt-4 hidden">Contraseña incorrecta</p>
         </div>
-    </nav>
+    </div>
 
-    <main class="max-w-6xl mx-auto p-4 md:p-8">
-        
-        <section id="tab-pedidos" class="tab-content">
-            <header class="mb-8">
-                <h1 class="text-3xl font-black text-gray-900 tracking-tight">PEDIDOS EN COCINA</h1>
-                <p class="text-gray-500">Gestión de comandas en tiempo real</p>
-            </header>
-            <div id="grid-pedidos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="col-span-full text-center py-20 text-gray-400 font-medium">Cargando pedidos...</div>
-            </div>
-        </section>
-
-        <section id="tab-inventario" class="tab-content hidden">
-            <header class="mb-8">
-                <h1 class="text-3xl font-black text-gray-900 tracking-tight">GESTIÓN DE MENÚ</h1>
-                <p class="text-gray-500">Marca tus platos estrella y organiza el catálogo</p>
-            </header>
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Producto</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Categoría</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase">Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-inventario" class="divide-y divide-gray-200 bg-white">
-                        </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="tab-historial" class="tab-content hidden">
-            <header class="mb-8">
-                <h1 class="text-3xl font-black text-gray-900 tracking-tight">RESUMEN DE VENTAS</h1>
-                <p class="text-gray-500">Rendimiento del negocio hoy</p>
-            </header>
-            <div id="stats-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div id="dashboard-principal" class="hidden">
+        <nav class="bg-white shadow-md sticky top-0 z-50">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl font-black text-red-600 tracking-tighter">ADMIN PANEL</span>
+                        <div class="bg-green-500 h-2 w-2 rounded-full animate-pulse"></div>
+                    </div>
+                    <div class="flex gap-2 border-l pl-2">
+                        <button onclick="verTab('tab-pedidos')" class="tab-btn active text-xs md:text-sm font-bold px-3 py-2 rounded-lg transition">📋 Pedidos</button>
+                        <button onclick="verTab('tab-inventario')" class="tab-btn text-xs md:text-sm font-bold px-3 py-2 rounded-lg transition">🍕 Inventario</button>
+                        <button onclick="verTab('tab-historial')" class="tab-btn text-xs md:text-sm font-bold px-3 py-2 rounded-lg transition">📊 Historial</button>
+                    </div>
                 </div>
-        </section>
+            </div>
+        </nav>
 
-    </main>
+        <main class="max-w-6xl mx-auto p-4 md:p-8">
+            
+            <section id="tab-pedidos" class="tab-content">
+                <header class="mb-8 flex justify-between items-end">
+                    <div>
+                        <h1 id="titulo-pedidos" class="text-3xl font-black text-gray-900 tracking-tight transition-all">PEDIDOS EN COCINA</h1>
+                        <p class="text-gray-500">Gestión de comandas en tiempo real</p>
+                    </div>
+                </header>
+                <div id="grid-pedidos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="col-span-full text-center py-20 text-gray-400 font-medium">Cargando pedidos...</div>
+                </div>
+            </section>
+
+            <section id="tab-inventario" class="tab-content hidden">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-black text-gray-900 tracking-tight">GESTIÓN DE MENÚ</h1>
+                    <p class="text-gray-500">Marca tus platos estrella y controla el stock</p>
+                </header>
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Producto</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Categoría</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase">Acciones Rápidas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-inventario" class="divide-y divide-gray-200 bg-white">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="tab-historial" class="tab-content hidden">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-black text-gray-900 tracking-tight">RESUMEN DE VENTAS</h1>
+                    <p class="text-gray-500">Rendimiento del negocio hoy</p>
+                </header>
+                <div id="stats-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
 
     <script>
+        // --- SISTEMA DE LOGIN BÁSICO ---
+        function iniciarSesion() {
+            const pass = document.getElementById('input-pass').value;
+            const claveSegura = "cinelandia2026"; // <-- ¡AQUÍ CAMBIAS LA CONTRASEÑA!
+
+            if (pass === claveSegura) {
+                // Ocultar pantalla login y mostrar dashboard
+                const pantallaLogin = document.getElementById('pantalla-login');
+                pantallaLogin.style.opacity = '0';
+                setTimeout(() => {
+                    pantallaLogin.classList.add('hidden');
+                    document.getElementById('dashboard-principal').classList.remove('hidden');
+                    // Iniciar la carga de datos una vez dentro
+                    cargarPedidos();
+                }, 500);
+            } else {
+                document.getElementById('error-login').classList.remove('hidden');
+            }
+        }
+
+        // Permitir dar "Enter" para entrar
+        document.getElementById('input-pass').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') iniciarSesion();
+        });
+
+        // --- CONEXIÓN EN TIEMPO REAL (SOCKET.IO) ---
+        const socket = io('http://localhost:3000');
+
+        function reproducirCampana() {
+            const audio = new Audio('https://actions.google.com/sounds/v1/alarms/dinner_bell_triangle.ogg');
+            audio.play().catch(e => console.log("El navegador bloqueó el audio hasta el primer clic."));
+        }
+
+        socket.on('nuevo_pedido_recibido', () => {
+            reproducirCampana();
+            cargarPedidos(); // Recargamos la tabla al instante
+            
+            // Efecto visual de salto en el título
+            const titulo = document.getElementById('titulo-pedidos');
+            titulo.classList.add('text-red-500', 'animate-bounce');
+            setTimeout(() => titulo.classList.remove('text-red-500', 'animate-bounce'), 3000);
+        });
+
         // --- LÓGICA DE NAVEGACIÓN ---
         function verTab(tabId) {
-            // Ocultar todos los contenidos
             document.querySelectorAll('.tab-content').forEach(section => section.classList.add('hidden'));
-            // Mostrar el seleccionado
             document.getElementById(tabId).classList.remove('hidden');
             
-            // Actualizar estado de botones
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             event.currentTarget.classList.add('active');
 
-            // Cargar datos según la pestaña
             if (tabId === 'tab-pedidos') cargarPedidos();
             if (tabId === 'tab-inventario') cargarInventario();
             if (tabId === 'tab-historial') cargarStats();
@@ -124,7 +186,7 @@
 
                         <div class="flex flex-col gap-3">
                             <select onchange="actualizarEstado(${p.id}, this.value)" 
-                                    class="w-full bg-gray-50 border-none text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-red-500 transition">
+                                    class="w-full bg-gray-50 border-none text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-red-500 transition cursor-pointer">
                                 <option value="pendiente" ${p.estado === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
                                 <option value="cocinando" ${p.estado === 'cocinando' ? 'selected' : ''}>👨‍🍳 Cocinando</option>
                                 <option value="listo" ${p.estado === 'listo' ? 'selected' : ''}>✅ Listo</option>
@@ -146,7 +208,7 @@
                     body: JSON.stringify({estado: nuevoEstado})
                 });
                 if (res.ok) cargarPedidos();
-            } catch (e) { alert("Error al actualizar"); }
+            } catch (e) { alert("Error al actualizar estado"); }
         }
 
         function getEstadoColor(estado) {
@@ -161,7 +223,8 @@
         // --- GESTIÓN DE INVENTARIO ---
         async function cargarInventario() {
             try {
-                const res = await fetch('http://localhost:3000/menu');
+                // Importante: mandamos admin=true para ver incluso lo agotado
+                const res = await fetch('http://localhost:3000/menu?admin=true');
                 const productos = await res.json();
                 const tbody = document.getElementById('tabla-inventario');
                 
@@ -174,10 +237,15 @@
                         <td class="px-6 py-4">
                             <span class="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600 uppercase">${p.categoria}</span>
                         </td>
-                        <td class="px-6 py-4 text-center">
+                        <td class="px-6 py-4 text-center flex justify-center gap-2">
                             <button onclick="toggleRecomendado(${p.id}, ${p.es_recomendado})" 
-                                    class="text-xs font-bold px-4 py-2 rounded-full transition-all ${p.es_recomendado ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 'bg-gray-100 text-gray-400 border border-transparent'}">
+                                    class="text-xs font-bold px-4 py-2 rounded-full transition-all ${p.es_recomendado ? 'bg-yellow-100 text-yellow-700 border border-yellow-200 hover:bg-yellow-200' : 'bg-gray-100 text-gray-400 border border-transparent hover:bg-gray-200'}">
                                 ${p.es_recomendado ? '⭐ RECOMENDADO' : 'MARCAR'}
+                            </button>
+                            
+                            <button onclick="toggleDisponibilidad(${p.id}, ${p.disponible})" 
+                                    class="text-xs font-bold px-4 py-2 rounded-full transition-all ${p.disponible !== false ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200' : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'}">
+                                ${p.disponible !== false ? '✅ DISPONIBLE' : '❌ AGOTADO'}
                             </button>
                         </td>
                     </tr>
@@ -195,6 +263,20 @@
                 });
                 cargarInventario();
             } catch (e) { alert("Error al actualizar"); }
+        }
+
+        async function toggleDisponibilidad(id, estadoActual) {
+            const nuevoEstado = estadoActual !== false ? false : true;
+            try {
+                await fetch(`http://localhost:3000/productos/${id}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ disponible: nuevoEstado })
+                });
+                cargarInventario(); 
+            } catch (e) { 
+                alert("Error al actualizar el estado del producto"); 
+            }
         }
 
         // --- GESTIÓN DE ESTADÍSTICAS ---
@@ -220,15 +302,6 @@
                 `;
             } catch (e) { console.error("Error en stats", e); }
         }
-
-        // Inicio automático
-        cargarPedidos();
-        // Auto-refresco de pedidos cada 30 segundos si estamos en esa pestaña
-        setInterval(() => {
-            if (!document.getElementById('tab-pedidos').classList.contains('hidden')) {
-                cargarPedidos();
-            }
-        }, 30000);
     </script>
 </body>
 </html>

@@ -1,19 +1,47 @@
 const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
+const http = require('http'); // Necesario para Socket.io
+const { Server } = require('socket.io'); // Importamos el servidor de sockets
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 1. Configuración del Servidor HTTP y WebSockets
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*", // En desarrollo permitimos todo
+        methods: ["GET", "POST", "PATCH"]
+    }
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 
+// 2. Gestión de conexiones en tiempo real
+io.on('connection', (socket) => {
+    console.log('🟢 Administrador conectado al sistema');
+    socket.on('disconnect', () => {
+        console.log('🔴 Administrador desconectado');
+    });
+});
+
 // --- RUTA 1: OBTENER EL MENÚ ---
+// Modificada: Ahora acepta un parámetro ?admin=true para ver todo, 
+// de lo contrario solo muestra lo disponible para el cliente.
 app.get('/menu', async (req, res) => {
+    const isAdmin = req.query.admin === 'true';
     try {
-        const result = await pool.query('SELECT * FROM productos ORDER BY categoria ASC, nombre ASC');
+        let query = 'SELECT * FROM productos';
+        if (!isAdmin) {
+            query += ' WHERE disponible = true'; // El cliente no ve lo agotado
+        }
+        query += ' ORDER BY categoria ASC, nombre ASC';
+        
+        const result = await pool.query(query);
         res.json(result.rows);
     } catch (err) {
         console.error('Error al obtener el menú:', err.message);
@@ -23,7 +51,7 @@ app.get('/menu', async (req, res) => {
 
 // --- RUTA 2: RECIBIR PEDIDOS ---
 app.post('/pedidos', async (req, res) => {
-    const { carrito, mesa } = req.body; 
+    const { carrito, mesa } = req.body;
     
     if (!carrito || carrito.length === 0 || !mesa) {
         return res.status(400).json({ error: "Faltan datos en el pedido" });
@@ -50,6 +78,10 @@ app.post('/pedidos', async (req, res) => {
         }
 
         await client.query('COMMIT');
+
+        // 🔔 NOTIFICACIÓN EN TIEMPO REAL: Avisamos al admin que llegó un pedido
+        io.emit('nuevo_pedido_recibido', { id: pedidoId, mesa: mesa });
+
         res.status(201).json({ mensaje: 'Pedido recibido', pedidoId });
     } catch (err) {
         await client.query('ROLLBACK');
@@ -82,7 +114,7 @@ app.get('/admin/pedidos', async (req, res) => {
     }
 });
 
-// --- NUEVA RUTA: ESTADÍSTICAS (PARA LA PESTAÑA HISTORIAL) ---
+// --- RUTA 4: ESTADÍSTICAS ---
 app.get('/admin/stats-hoy', async (req, res) => {
     try {
         const query = `
@@ -103,7 +135,6 @@ app.get('/admin/stats-hoy', async (req, res) => {
         const result = await pool.query(query);
         res.json(result.rows[0]);
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: "Error en estadísticas" });
     }
 });
@@ -120,18 +151,27 @@ app.patch('/pedidos/:id', async (req, res) => {
     }
 });
 
-// --- NUEVA RUTA: ACTUALIZAR PRODUCTO (RECOMENDADOS) ---
+// --- ACTUALIZAR PRODUCTO (RECOMENDADOS Y DISPONIBILIDAD) ---
 app.patch('/productos/:id', async (req, res) => {
     const { id } = req.params;
-    const { es_recomendado } = req.body;
+    const { es_recomendado, disponible } = req.body;
+    
     try {
-        await pool.query('UPDATE productos SET es_recomendado = $1 WHERE id = $2', [es_recomendado, id]);
-        res.json({ mensaje: 'Producto actualizado' });
+        // Esta ruta ahora es dinámica: puede actualizar recomendados o disponibilidad
+        if (es_recomendado !== undefined) {
+            await pool.query('UPDATE productos SET es_recomendado = $1 WHERE id = $2', [es_recomendado, id]);
+        }
+        if (disponible !== undefined) {
+            await pool.query('UPDATE productos SET disponible = $1 WHERE id = $2', [disponible, id]);
+        }
+        res.json({ mensaje: 'Producto actualizado con éxito' });
     } catch (err) {
         res.status(500).json({ error: 'Error al actualizar producto' });
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`✅ Servidor activo en puerto ${PORT}`);
+// 3. Iniciar el servidor usando 'server' en lugar de 'app'
+server.listen(PORT, () => {
+    console.log(`✅ Servidor Cinelandia activo en puerto ${PORT}`);
+    console.log(`🚀 Tiempo real activado con Socket.io`);
 });
