@@ -1,243 +1,201 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Pedidos - Menú Digital</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .category-pill.active { background-color: #ef4444; color: white; }
-        .product-img { width: 100%; height: 112px; object-fit: cover; }
-    </style>
+    <title>Pizza Planeta | Menú Galáctico</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#dc2626">
+    <meta name="theme-color" content="#050b18">
+    
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-50 min-h-screen pb-20">
 
-    <header class="bg-white shadow-sm sticky top-0 z-50 px-4 py-3">
-        <div class="flex justify-between items-center max-w-2xl mx-auto">
-            <div>
-                <h1 class="text-2xl font-black text-red-600 tracking-tighter">SISTEMA PEDIDOS</h1>
-                <div id="mesa-tag" class="text-xs font-bold uppercase text-gray-400">Escanea una mesa</div>
-            </div>
-            <button onclick="abrirCarrito()" class="relative p-2 bg-gray-100 rounded-full">
-                🛒 <span id="cart-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">0</span>
-            </button>
-        </div>
-    </header>
+<body class="min-h-screen flex flex-col overflow-x-hidden text-white m-0" 
+    style="background: linear-gradient(to bottom, #1e3a8a 0%, #050b18 25%, #050b18 75%, #3b0764 100%);">
 
-    <main class="max-w-2xl mx-auto p-4">
-        <div id="categories" class="flex gap-2 overflow-x-auto no-scrollbar py-2 px-4 mb-4">
-            </div>
-
-        <div id="menu-grid" class="grid grid-cols-2 gap-4">
-            <div class="animate-pulse bg-gray-200 h-40 rounded-xl"></div>
-            <div class="animate-pulse bg-gray-200 h-40 rounded-xl"></div>
-        </div>
-    </main>
-
-    <div id="cart-drawer" class="fixed inset-0 bg-black/50 z-[60] hidden">
-        <div class="absolute right-0 top-0 h-full w-80 bg-white shadow-2xl flex flex-col">
-            <div class="p-4 border-b flex justify-between items-center">
-                <h2 class="font-bold text-xl">Tu Pedido</h2>
-                <button onclick="cerrarCarrito()" class="text-2xl">&times;</button>
-            </div>
-            <div id="cart-items" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
-            <div class="p-4 border-t bg-gray-50">
-                <div class="flex justify-between mb-4 font-bold text-lg">
-                    <span>Total:</span>
-                    <span id="cart-total">$0</span>
-                </div>
-                <button id="btn-confirmar" onclick="enviarPedido()" class="w-full bg-red-600 text-white py-4 rounded-xl font-bold hover:bg-red-700 transition-colors">
-                    Confirmar Pedido
-                </button>
-            </div>
-        </div>
+    <div id="contenedor-mesa" class="hidden fixed top-6 right-6 z-50 bg-black/60 backdrop-blur-md border border-yellow-400/30 px-4 py-2 rounded-full items-center gap-2 shadow-[0_0_15px_rgba(250,204,21,0.2)]">
+        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        <span class="text-xs font-bold tracking-widest text-gray-300 uppercase">MESA: <span id="mesa-tag-visual" class="text-yellow-400"></span></span>
     </div>
 
-    <script>
-        let menuData = [];
-        let carrito = [];
-        // Busca donde se define la variable mesaSeleccionada
-        const params = new URLSearchParams(window.location.search);
-        const mesaSeleccionada = params.get('mesa');
+    <section class="relative h-screen w-full flex flex-col items-center justify-center text-center p-6 overflow-hidden">
+        <div class="absolute inset-0 z-0 bg-stardust opacity-40 pointer-events-none"></div>
+        <div class="absolute -bottom-[55%] md:-bottom-[65%] left-1/2 -translate-x-1/2 w-[250%] md:w-[150%] h-[100%] rounded-[100%] border-t-[2px] border-yellow-400/20 shadow-[0_-40px_100px_rgba(250,204,21,0.15)] bg-gradient-to-b from-[#050b18]/50 to-transparent pointer-events-none z-0 backdrop-blur-[2px]"></div>
+        
+        <div class="absolute inset-0 z-0 pointer-events-none">
+            <div class="absolute top-[20%] left-[15%] opacity-60 animate-orbit-1"><svg class="w-6 h-6 star-glow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L13.5 10.5L24 12L13.5 13.5L12 24L10.5 13.5L0 12L10.5 10.5L12 0Z" fill="currentColor"/></svg></div>
+            <div class="absolute top-[40%] right-[15%] opacity-40 animate-orbit-2"><svg class="w-8 h-8 star-glow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L13.5 10.5L24 12L13.5 13.5L12 24L10.5 13.5L0 12L10.5 10.5L12 0Z" fill="currentColor"/></svg></div>
+            <div class="absolute bottom-[25%] left-[25%] opacity-50 animate-orbit-3"><svg class="w-5 h-5 star-glow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L13.5 10.5L24 12L13.5 13.5L12 24L10.5 13.5L0 12L10.5 10.5L12 0Z" fill="currentColor"/></svg></div>
+        </div>
 
-        if (mesaSeleccionada) {
-            const tag = document.getElementById('mesa-tag');
-            // Esto cambia el texto y asegura que no haya fondos raros
-            tag.innerText = `MESA: ${mesaSeleccionada}`;
-            tag.className = "text-sm font-black uppercase text-red-600"; // Rojo vibrante sobre blanco
-        }
+        <div class="relative z-10 flex flex-col items-center">
+            <div id="contenedor-cohete" class="relative mb-8 z-20 flex flex-col items-center w-32 md:w-44 origin-bottom">
+                <div class="absolute inset-0 bg-[#3b0764] blur-2xl rounded-full scale-150 opacity-50 z-0 pointer-events-none"></div>
+                <svg viewBox="0 0 100 150" class="relative w-full h-auto drop-shadow-[0_15px_25px_rgba(250,204,21,0.2)] z-10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="casco_plata" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ffffff" /> <stop offset="100%" stop-color="#cbd5e1" /> 
+                        </linearGradient>
+                        <linearGradient id="ventana_azul" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#7dd3fc" /> <stop offset="100%" stop-color="#0284c7" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M30 100 Q 15 120 5 140 L 30 125 Z" fill="#dc2626" />
+                    <path d="M70 100 Q 85 120 95 140 L 70 125 Z" fill="#dc2626" />
+                    <path d="M50 110 L 47 130 L 53 130 Z" fill="#991b1b" />
+                    <path d="M50 5 C 20 40 30 110 30 130 L 70 130 C 70 110 80 40 50 5 Z" fill="url(#casco_plata)" stroke="#94a3b8" stroke-width="1"/>
+                    <path d="M50 5 C 38 19 33 35 31 50 L 69 50 C 67 35 62 19 50 5 Z" fill="#dc2626" />
+                    <circle cx="50" cy="70" r="14" fill="#334155" stroke="#94a3b8" stroke-width="2"/>
+                    <circle cx="50" cy="70" r="9" fill="url(#ventana_azul)"/>
+                    <circle cx="47" cy="67" r="3" fill="#ffffff" opacity="0.6"/> <path d="M31 95 L 69 95" stroke="#94a3b8" stroke-width="1" stroke-opacity="0.5"/>
+                    <path d="M30 110 L 70 110" stroke="#94a3b8" stroke-width="1" stroke-opacity="0.5"/>
+                    <path d="M40 130 L 60 130 L 65 142 L 35 142 Z" fill="#475569" />
+                </svg>
+                <div id="fuego-motor" class="absolute bottom-2 md:bottom-3 left-1/2 -translate-x-1/2 w-6 md:w-8 h-20 md:h-28 bg-gradient-to-b from-yellow-300 via-orange-500 to-transparent blur-[6px] rounded-full opacity-0 origin-top z-0 transition-opacity duration-300 pointer-events-none"></div>
+            </div>            
+            <h1 class="text-7xl md:text-9xl font-black italic tracking-tighter text-white leading-none drop-shadow-2xl">PIZZA <span class="text-yellow-400">PLANETA</span></h1>
+            <p class="text-gray-300 mt-4 text-lg md:text-xl uppercase tracking-[0.3em] font-light shadow-black drop-shadow-md">Las pizzas más estelares</p>
+            <button onclick="iniciarDespegue()" class="mt-12 bg-yellow-400 text-black px-10 py-5 rounded-full font-black text-xl hover:bg-yellow-300 hover:scale-105 transition-all shadow-[0_0_30px_rgba(250,204,21,0.3)] flex items-center gap-3 group z-20">
+                EXPLORAR MENÚ
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 group-hover:translate-y-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" /></svg>
+            </button>
+        </div>
+    </section>
 
-        async function cargarMenu() {
-            try {
-                const res = await fetch('http://localhost:3000/menu');
-                menuData = await res.json();
-                
-                // LIMPIEZA CRUCIAL: Borra el mensaje de error o carga antes de renderizar
-                document.getElementById('menu-grid').innerHTML = ''; 
-                
-                generarCategorias();
-                renderMenu(menuData);
-            } catch (e) {
-                console.error("Error al cargar:", e);
-                document.getElementById('menu-grid').innerHTML = '<p class="col-span-full text-center py-10">Error al conectar con el servidor.</p>';
-            }
-        }
+    <main id="menu-section" class="flex-grow p-8 pt-20 relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <header class="text-center mb-10"><h2 class="text-5xl font-black text-white tracking-tighter italic drop-shadow-lg">NUESTRO <span class="text-yellow-400">MENÚ</span></h2></header>
 
-        function generarCategorias() {
-            const container = document.getElementById('categories');
+            <div class="flex overflow-x-auto no-scrollbar gap-4 mb-10 justify-center py-2">
+                <button onclick="filtrar('Todos', this)" class="category-pill active bg-yellow-400 text-black px-6 py-2 rounded-full font-bold transition-all">🌌 Todo</button>
+                <button onclick="filtrar('Recomendados', this)" class="category-pill bg-white/5 border border-white/20 text-gray-300 px-6 py-2 rounded-full font-bold transition-all hover:border-yellow-400">⭐ Recomendados</button>
+                <button onclick="filtrar('Pizzas', this)" class="category-pill bg-white/5 border border-white/20 text-gray-300 px-6 py-2 rounded-full font-bold transition-all hover:border-yellow-400">🍕 Pizzas</button>
+            </div>
             
-            // Si el contenedor no existe, detenemos la función para que no de error
-            if (!container) return;
-
-            // Creamos la lista de categorías únicas de tu base de datos
-            const cats = ['Todos', 'Recomendados', ...new Set(menuData.map(p => p.categoria))];
-            
-            container.innerHTML = cats.map(c => {
-                let texto = c;
-                let claseExtra = "";
-                
-                if (c === 'Recomendados') {
-                    texto = "⭐ Recomendados";
-                    claseExtra = "text-red-600 font-bold";
-                } else if (c === 'Pizzas') {
-                    texto = "🍕 Pizzas";
-                } else if (c === 'Bebidas') {
-                    texto = "🥤 Bebidas";
-                }
-
-                return `
-                    <button onclick="filtrar('${c}')" 
-                        class="category-pill ${c === 'Todos' ? 'active' : ''} ${claseExtra} px-6 py-2 bg-white rounded-full text-sm font-bold shadow-sm whitespace-nowrap">
-                        ${texto}
-                    </button>
-                `;
-            }).join('');
-        }
-
-        function renderMenu(items) {
-            const grid = document.getElementById('menu-grid');
-            grid.innerHTML = items.map(p => `
-                <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 flex flex-col">
-                    <img src="${p.imagen_url}" class="product-img" alt="${p.nombre}">
-                    <div class="p-3 flex-1 flex flex-col">
-                        <h3 class="font-bold text-sm text-gray-800 leading-tight">${p.nombre}</h3>
-                        <p class="text-xs text-gray-400 mt-1 flex-1">${p.descripcion || ''}</p>
-                        <div class="flex justify-between items-center mt-3">
-                            <span class="font-black text-red-600">$${(parseFloat(p.precio) || 0).toFixed(2)}</span>
-                            <button onclick="agregar('${p.id}')" class="bg-gray-900 text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">+</button>
+            <div id="pizza-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                </div>
+        </div>
+    </main>
+    
+    <section class="py-20 relative z-10">
+            <div class="max-w-4xl mx-auto px-6">
+                <div class="bg-black/40 p-10 md:p-14 rounded-[3rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-md text-center relative overflow-hidden">
+                    <div class="absolute -top-20 -right-20 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+                    <h2 class="text-4xl md:text-5xl font-black text-white tracking-tighter italic mb-4 relative z-10">RADAR DE <span class="text-yellow-400">PEDIDOS</span> 📡</h2>
+                    <p class="text-gray-300 text-lg uppercase tracking-widest mb-10 relative z-10">Rastrea tu pedido</p>
+                    <div class="flex flex-col md:flex-row gap-4 justify-center max-w-2xl mx-auto mb-12 relative z-10">
+                        <input type="text" id="codigo-rastreo" placeholder="Ej. ASTRO-123" class="flex-grow bg-white/5 border border-white/20 rounded-2xl px-6 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 uppercase font-bold tracking-widest transition-all">
+                        <button onclick="rastrearPedido()" class="bg-yellow-400 text-black px-8 py-4 rounded-2xl font-black hover:bg-yellow-300 transition-all active:scale-95 shadow-[0_0_15px_rgba(250,204,21,0.2)] whitespace-nowrap">ESCANEAR</button>
+                    </div>
+                    
+                    <div id="panel-telemetria" class="hidden relative z-10 mt-8 pt-8 border-t border-white/10">
+                        <div class="flex flex-col md:flex-row justify-between items-center md:items-start gap-8 relative">
+                            <div class="hidden md:block absolute top-6 left-[10%] right-[10%] h-1 bg-gray-700/50 -z-10 rounded-full">
+                                <div id="linea-progreso" class="h-full bg-green-400 w-0 transition-all duration-1000"></div>
+                            </div>
+                            <div class="flex flex-col items-center w-full md:w-1/4 paso-tracker" id="paso-1">
+                                <div class="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl mb-4 transition-all duration-500 z-10">📡</div>
+                                <h4 class="font-bold text-white mb-1">Señal Recibida</h4>
+                                <p class="text-xs text-gray-400">Procesando orden</p>
+                            </div>
+                            <div class="flex flex-col items-center w-full md:w-1/4 paso-tracker opacity-50" id="paso-2">
+                                <div class="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl mb-4 transition-all duration-500 z-10">🔥</div>
+                                <h4 class="font-bold text-white mb-1">Horno Espacial</h4>
+                                <p class="text-xs text-gray-400">Preparando pizza</p>
+                            </div>
+                            <div class="flex flex-col items-center w-full md:w-1/4 paso-tracker opacity-50" id="paso-3">
+                                <div class="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl mb-4 transition-all duration-500 z-10">🚀</div>
+                                <h4 class="font-bold text-white mb-1">En Camino</h4>
+                                <p class="text-xs text-gray-400">Viaje hiperespacial</p>
+                            </div>
+                            <div class="flex flex-col items-center w-full md:w-1/4 paso-tracker opacity-50" id="paso-4">
+                                <div class="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl mb-4 transition-all duration-500 z-10">🛸</div>
+                                <h4 class="font-bold text-white mb-1">Aterrizaje</h4>
+                                <p class="text-xs text-gray-400">Entregado</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            `).join('');
-        }
-
-        function agregar(id) {
-            const prod = menuData.find(p => p.id == id);
-            const existe = carrito.find(item => item.id == id);
-            if (existe) { existe.cantidad++; } 
-            else { carrito.push({...prod, cantidad: 1}); }
-            actualizarUI();
-        }
-
-        function actualizarUI() {
-            const count = carrito.reduce((acc, item) => acc + item.cantidad, 0);
-            document.getElementById('cart-count').innerText = count;
-            
-            const total = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
-            document.getElementById('cart-total').innerText = `$${total.toLocaleString()}`;
-
-            document.getElementById('cart-items').innerHTML = carrito.map(item => `
-                <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                    <div>
-                        <p class="font-bold text-sm">${item.nombre}</p>
-                        <p class="text-xs text-gray-500">${item.cantidad} x $${parseFloat(item.precio).toLocaleString()}</p>
+            </div>
+        </section>
+    
+    <footer class="mt-10 py-16 bg-black/30 backdrop-blur-xl border-t border-white/10">
+            <div class="max-w-6xl mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div class="bg-black/40 p-12 rounded-[3rem] border border-white/10 flex flex-col items-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-md transition-transform hover:-translate-y-2">
+                        <h3 class="text-2xl font-black text-white mb-1 uppercase italic">Instagram</h3>
+                        <p class="text-yellow-400 font-bold mb-8">@pizzaplaneta</p>
+                        <div class="w-40 h-40 bg-white rounded-2xl p-2 flex items-center justify-center overflow-hidden">
+                            <img src="qr_instagram.png" alt="QR Instagram" onerror="this.src='https://via.placeholder.com/150?text=QR+IG'" class="w-full h-full object-contain">
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="cambiarCant('${item.id}', -1)" class="w-6 h-6 border rounded">-</button>
-                        <span class="text-sm font-bold">${item.cantidad}</span>
-                        <button onclick="cambiarCant('${item.id}', 1)" class="w-6 h-6 border rounded">+</button>
+                    
+                    <div class="bg-black/40 p-12 rounded-[3rem] border border-white/10 flex flex-col items-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-md transition-transform hover:-translate-y-2">
+                        <h3 class="text-2xl font-black text-white mb-1 uppercase italic">WhatsApp</h3>
+                        <p class="text-green-400 font-bold mb-8">+1 (555) 123-4567</p>
+                        <div class="w-40 h-40 bg-white rounded-2xl p-2 flex items-center justify-center overflow-hidden">
+                            <img src="qr_whatsapp.png" alt="QR WhatsApp" onerror="this.src='https://via.placeholder.com/150?text=QR+WA'" class="w-full h-full object-contain">
+                        </div>
                     </div>
                 </div>
-            `).join('');
-        }
-
-        function cambiarCant(id, delta) {
-            const idx = carrito.findIndex(i => i.id == id);
-            carrito[idx].cantidad += delta;
-            if (carrito[idx].cantidad <= 0) carrito.splice(idx, 1);
-            actualizarUI();
-        }
-
-        async function enviarPedido() {
-            if (!mesaSeleccionada) return alert("Por favor, escanea un código QR válido de mesa.");
-            if (carrito.length === 0) return alert("El carrito está vacío.");
-
-            const btn = document.getElementById('btn-confirmar');
-            btn.disabled = true;
-            btn.innerText = "Enviando...";
-
-            try {
-                const res = await fetch('http://localhost:3000/pedidos', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        mesa: parseInt(mesaSeleccionada),
-                        carrito: carrito.map(item => ({
-                            producto_id: item.id,
-                            cantidad: item.cantidad,
-                            precio_unitario: item.precio
-                        }))
-                    })
-                });
-
-                if (res.ok) {
-                    alert("¡Pedido enviado con éxito!");
-                    carrito = [];
-                    actualizarUI();
-                    cerrarCarrito();
-                } else {
-                    const err = await res.json();
-                    alert("Error: " + err.error);
-                }
-            } catch (e) {
-                alert("Error de conexión.");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Confirmar Pedido";
-            }
-        }
-
-        function abrirCarrito() { document.getElementById('cart-drawer').classList.remove('hidden'); }
-        function cerrarCarrito() { document.getElementById('cart-drawer').classList.add('hidden'); }
-        function filtrar(cat) {
-            let productosFiltrados;
-
-            if (cat === 'Todos') {
-                productosFiltrados = menuData;
-            } else if (cat === 'Recomendados') {
-                // Aquí filtramos por la columna booleana que añadimos ayer
-                productosFiltrados = menuData.filter(p => p.es_recomendado === true);
-            } else {
-                // Filtro normal por nombre de categoría
-                productosFiltrados = menuData.filter(p => p.categoria === cat);
-            }
-
-            renderMenu(productosFiltrados);
-
-            // Lógica para que el botón se vea "activo" (rojo) al hacer clic
-            document.querySelectorAll('.category-pill').forEach(btn => {
-                // Limpiamos el texto para comparar (quitamos emojis para que no falle)
-                const btnText = btn.innerText.replace(/[^\w]/g, ''); 
-                const catClean = cat.replace(/[^\w]/g, '');
                 
-                btn.classList.toggle('active', btnText.includes(catClean));
-            });
+                <div class="mt-10 text-center text-gray-400 text-xs uppercase tracking-widest">
+                    <p>&copy; 2026 Cinelandia - San Juan de Colón | Hecho para el universo 🪐</p>
+                </div>
+            </div>
+        </footer>
+    
+    <div class="fixed bottom-8 right-8 z-50">
+        <button onclick="toggleCart()" class="bg-yellow-400 text-black p-5 rounded-full shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:scale-110 active:scale-95 transition-all flex items-center gap-3 font-black">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            <span id="cart-count" class="bg-black text-white px-2 py-0.5 rounded-md text-xs">0</span>
+        </button>
+    </div>
+
+    <div id="cart-sidebar" class="fixed right-0 top-0 h-full w-80 bg-black/80 backdrop-blur-2xl shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transform translate-x-full transition-transform duration-500 z-[60] p-8 border-l border-white/10">
+        <div class="flex justify-between items-center mb-10">
+            <h2 class="text-2xl font-black italic">TU PEDIDO</h2>
+            <button onclick="toggleCart()" class="text-gray-500 hover:text-white text-xl">✕</button>
+        </div>
+        <div id="cart-items" class="space-y-4 overflow-y-auto h-[60vh] pr-2 no-scrollbar"></div>
+        <div class="absolute bottom-0 left-0 w-full p-8 bg-transparent border-t border-white/10">
+            <div class="flex justify-between mb-6">
+                <span class="text-gray-400 font-bold">TOTAL:</span>
+                <span id="cart-total" class="text-2xl font-black text-green-400">$0.00</span>
+            </div>
+            <button onclick="procesarPedido()" id="btn-confirmar-pedido" class="w-full bg-yellow-400 text-black py-4 rounded-2xl font-black hover:bg-yellow-300 transition-colors shadow-lg shadow-yellow-400/10">
+                CONFIRMAR 🚀
+            </button>
+        </div>
+    </div>
+    
+    <div id="modal-confirmacion" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="cerrarModal()"></div>
+        <div class="relative bg-[#0d1526]/80 p-10 md:p-12 rounded-[3rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl max-w-lg w-full text-center">
+            <button onclick="cerrarModal()" class="absolute top-6 right-8 text-gray-500 hover:text-white text-2xl">✕</button>
+            <h2 class="text-4xl font-black text-white tracking-tighter italic mb-4">¡DESPEGUE <span class="text-yellow-400">EXITOSO</span>!</h2>
+            <p class="text-gray-300 text-lg mb-8">Tu pedido ha sido recibido.</p>
+            <div class="bg-white/5 p-6 rounded-2xl border border-white/10 mb-10">
+                <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">CÓDIGO DE MISIÓN:</p>
+                <p id="codigo-pedido-modal" class="text-5xl font-black text-yellow-400 tracking-tighter italic">ASTRO-XXX</p>
+            </div>
+            <button onclick="irAlRadarDesdeModal()" class="w-full bg-yellow-400 text-black px-8 py-5 rounded-full font-black text-xl hover:bg-yellow-300">Rastrear mi Pedido 📡</button>
+        </div>
+    </div>
+    
+    <div id="btn-subir" class="fixed bottom-8 left-8 z-50 opacity-0 pointer-events-none transition-all duration-500 translate-y-4">
+        <button onclick="subirAlInicio()" class="bg-black/60 backdrop-blur-md border border-white/10 text-white p-4 rounded-full hover:bg-yellow-400 hover:text-black transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" /></svg>
+        </button>
+    </div>
+
+    <script src="App.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
         }
-        cargarMenu();
     </script>
 </body>
 </html>

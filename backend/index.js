@@ -70,13 +70,13 @@ app.post('/pedidos', async (req, res) => {
         
         const pedidoId = pedidoRes.rows[0].id;
 
+        // --- DENTRO DE app.post('/pedidos', ...) ---
         for (const item of carrito) {
             await client.query(
-                'INSERT INTO detalles_pedido (pedido_id, producto_id, cantidad, precio_unitario) VALUES ($1, $2, $3, $4)',
-                [pedidoId, item.producto_id, item.cantidad, item.precio_unitario]
+                'INSERT INTO detalles_pedido (pedido_id, producto_id, cantidad, precio_unitario, talla) VALUES ($1, $2, $3, $4, $5)',
+                [pedidoId, item.producto_id, item.cantidad, item.precio_unitario, item.talla] // <--- Añadimos item.talla
             );
         }
-
         await client.query('COMMIT');
 
         // 🔔 NOTIFICACIÓN EN TIEMPO REAL: Avisamos al admin que llegó un pedido
@@ -167,6 +167,23 @@ app.patch('/productos/:id', async (req, res) => {
         res.json({ mensaje: 'Producto actualizado con éxito' });
     } catch (err) {
         res.status(500).json({ error: 'Error al actualizar producto' });
+    }
+});
+
+// --- RUTA 5: RASTREAR PEDIDO (CLIENTE) ---
+app.get('/pedidos/:id/estado', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT estado FROM pedidos WHERE id = $1', [id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Pedido no encontrado" });
+        }
+        
+        // Devolvemos si está pendiente, cocinando, listo o finalizado
+        res.json({ estado: result.rows[0].estado });
+    } catch (err) {
+        res.status(500).json({ error: "Error de telemetría" });
     }
 });
 
