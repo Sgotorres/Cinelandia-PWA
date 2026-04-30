@@ -6,7 +6,6 @@
     filter: drop-shadow(0 0 12px rgba(250, 204, 21, 0.8));
     color: #facc15;
 }
-
 @keyframes orbit-1 {
     0% { transform: translate(0, 0) rotate(0deg) scale(0.8); }
     33% { transform: translate(40px, -60px) rotate(120deg) scale(1); }

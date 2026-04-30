@@ -1,0 +1,16 @@
+{
+  "name": "admin-desktop",
+  "version": "1.0.0",
+  "description": "Panel de administrador para Cinelandia",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Angel Gabriel Torres Acevedo",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^41.3.0"
+  }
+}

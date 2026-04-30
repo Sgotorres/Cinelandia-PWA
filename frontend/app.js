@@ -291,3 +291,45 @@ function actualizarRadarUI(estado) {
         icono.classList.add('bg-yellow-400', 'text-black', 'border-yellow-400', 'shadow-[0_0_15px_rgba(250,204,21,0.5)]');
     }
 }
+// --- CONTROL DE ESTADO DE LA TIENDA ---
+const API_ESTADO_URL = `${API_URL}/api/estado`;
+const alertaCerrado = document.getElementById('alerta-carrito-cerrado');
+const btnConfirmar = document.getElementById('btn-confirmar-pedido');
+
+// Iniciar conexión con Socket.io
+const socket = io(API_URL);
+
+// Función que enciende o apaga el bloqueo del carrito
+function manejarEstadoTienda(abierto) {
+    if (abierto) {
+        // Tienda abierta: Ocultamos alerta y habilitamos el botón
+        alertaCerrado.classList.add('hidden');
+        btnConfirmar.classList.remove('opacity-50', 'cursor-not-allowed');
+        btnConfirmar.disabled = false;
+        console.log("🟢 La tienda está abierta, el cliente puede pedir.");
+    } else {
+        // Tienda cerrada: Mostramos alerta y deshabilitamos el botón
+        alertaCerrado.classList.remove('hidden');
+        btnConfirmar.classList.add('opacity-50', 'cursor-not-allowed');
+        btnConfirmar.disabled = true;
+        console.log("🔴 La tienda está cerrada, bloqueando checkout.");
+    }
+}
+
+// 1. Verificar estado apenas el cliente entra a la página
+async function verificarEstadoInicial() {
+    try {
+        const respuesta = await fetch(API_ESTADO_URL);
+        const data = await respuesta.json();
+        manejarEstadoTienda(data.abierto);
+    } catch (error) {
+        console.error("Error al consultar el estado de la tienda:", error);
+    }
+}
+
+verificarEstadoInicial();
+
+// 2. Escuchar cambios en tiempo real desde el administrador
+socket.on('cambio_estado_tienda', (data) => {
+    manejarEstadoTienda(data.abierto);
+});

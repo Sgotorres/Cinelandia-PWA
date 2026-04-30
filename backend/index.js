@@ -1,9 +1,10 @@
+require('dotenv').config(); // <--- MUEVE ESTO A LA LÍNEA 1
 const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
-const http = require('http'); // Necesario para Socket.io
-const { Server } = require('socket.io'); // Importamos el servidor de sockets
-require('dotenv').config();
+const http = require('http'); 
+const { Server } = require('socket.io'); 
+// ... el resto sigue igual
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,7 +29,36 @@ io.on('connection', (socket) => {
         console.log('🔴 Administrador desconectado');
     });
 });
+// ========================================================
+// --- NUEVO: SISTEMA DE ESTADO DE LA TIENDA (Fase 1) ---
+// ========================================================
+let tiendaAbierta = false; // Variable global en memoria
 
+// Endpoint PÚBLICO: La PWA consulta esto antes de permitir compras
+app.get('/api/estado', (req, res) => {
+    res.json({ 
+        abierto: tiendaAbierta,
+        mensaje: tiendaAbierta ? "¡Estamos tomando pedidos!" : "Cinelandia se encuentra cerrado en este momento."
+    });
+});
+
+// Endpoint PRIVADO: Electron (main.js) enviará la señal aquí
+app.post('/api/admin/estado', (req, res) => {
+    const { abierto } = req.body;
+    
+    if (typeof abierto === 'boolean') {
+        tiendaAbierta = abierto;
+        console.log(`[SISTEMA] El administrador ha ${tiendaAbierta ? 'ABIERTO' : 'CERRADO'} Cinelandia.`);
+        
+        // Emitimos el cambio en tiempo real a todos los clientes (PWA)
+        io.emit('cambio_estado_tienda', { abierto: tiendaAbierta });
+        
+        res.json({ exito: true, estadoActual: tiendaAbierta });
+    } else {
+        res.status(400).json({ exito: false, error: 'Formato de estado inválido' });
+    }
+});
+// ========================================================
 // --- RUTA 1: OBTENER EL MENÚ ---
 // Modificada: Ahora acepta un parámetro ?admin=true para ver todo, 
 // de lo contrario solo muestra lo disponible para el cliente.
