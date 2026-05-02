@@ -87,15 +87,28 @@ function filtrar(categoria, botonElemento) {
     }
     renderPizzas(filtradas);
 }
+
+// --- FUNCIÓN BLINDADA (UX MEJORADO) ---
 async function procesarPedido() {
+    // 1. Validaciones iniciales
     if (carrito.length === 0) return alert("El carrito está vacío.");
     if (!numeroMesa) return alert("Por favor, escanea el código QR de tu mesa antes de pedir.");
+
+    // 2. BLINDAJE VISUAL Y FUNCIONAL DEL BOTÓN
+    // Obtenemos el botón de confirmar y cambiamos su estado
+    const btnConfirmar = document.getElementById('btn-confirmar-pedido');
+    const textoOriginal = btnConfirmar.innerHTML; // Guardamos cómo se veía antes
+    
+    // Desactivamos el botón y le ponemos un mensaje de carga
+    btnConfirmar.disabled = true;
+    btnConfirmar.classList.add('opacity-50', 'cursor-wait');
+    btnConfirmar.innerHTML = 'Enviando a la nave... 🚀 <span class="animate-pulse">...</span>';
 
     const pedidoData = {
         mesa: numeroMesa,
         carrito: carrito.map(item => ({ 
             producto_id: item.producto_id, 
-            cantidad: item.cantidad, // <-- Ahora sí manda la cantidad real
+            cantidad: item.cantidad, 
             precio_unitario: item.precio,
             talla: item.talla 
         }))
@@ -115,11 +128,22 @@ async function procesarPedido() {
             carrito = [];
             actualizarCarritoVisual();
             toggleCart();
+        } else {
+            // Si el servidor responde con error (ej. 500)
+            alert("Hubo un problema de comunicación con la base de control. Intenta de nuevo.");
         }
     } catch (e) {
-        alert("Error al enviar el pedido a la base.");
+        alert("Error de conexión. Revisa tu señal e intenta de nuevo.");
+    } finally {
+        // 3. RESTAURACIÓN DEL BOTÓN
+        // Sin importar si fue exitoso o falló, siempre volveamos a encender el botón
+        // y le regresamos su texto original para futuros pedidos.
+        btnConfirmar.disabled = false;
+        btnConfirmar.classList.remove('opacity-50', 'cursor-wait');
+        btnConfirmar.innerHTML = textoOriginal;
     }
 }
+
 // 2. REEMPLAZA agregarAlCarrito (Lógica para acumular en vez de repetir)
 function agregarAlCarrito(id, nombre, precio, talla) {
     const nombreCompleto = `${nombre} (${talla})`;
