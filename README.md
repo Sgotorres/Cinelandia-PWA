@@ -27,20 +27,31 @@ Para que el sistema funcione correctamente en tu máquina local, debes instalar 
 git clone https://github.com/Sgotorres/Cinelandia-PWA.git
 cd Cinelandia-PWA
 
-    2. Configurar el backend
+    2. Variables de Entorno
 
-cd backend
+Crea un archivo llamado .env dentro de la carpeta backend/ y configura tus credenciales locales de PostgreSQL:
+
+DB_USER=postgres
+DB_PASSWORD=tu_contraseña_aqui
+DB_NAME=sistemas_pedidos_db
+DB_HOST=localhost
+DB_PORT=5432
+
+    3. Instalación Global
+
+Abre tu terminal en la raíz del proyecto (carpeta Cinelandia-PWA) e instala todas las dependencias del backend y del panel administrador con un solo comando:
+
 npm install
-# Crea un archivo .env basado en el .env.example y configura tus credenciales de Postgres
+
+    🚀 Ejecución del Sistema
+
+Para encender todos los motores de Cinelandia (Backend, Frontend y Panel de Administrador), abre la terminal en la raíz del proyecto y ejecuta:
+
 npm start
 
-    3. Configurar el Panel de Administrador (Desktop)
+    ¿Qué sucede al ejecutar este comando?
 
-cd admin-desktop
-npm install
-npm start
-
-    4. Fronted
-
-cd frontend
-npx serve
+1. Se levanta el servidor Node.js en el puerto 3000.
+2. El servidor sirve automáticamente la interfaz web (PWA) del cliente en http://localhost:3000.
+3. Se abre automáticamente la aplicación de escritorio nativa (Electron).
+4. El sistema notifica la apertura del restaurante en tiempo real.

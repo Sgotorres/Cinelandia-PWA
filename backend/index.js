@@ -17,10 +17,14 @@ const io = new Server(server, {
         methods: ["GET", "POST", "PATCH"]
     }
 });
+const path = require('path');
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// NUEVO: Express servirá toda la carpeta 'frontend' automáticamente
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // 2. Gestión de conexiones en tiempo real
 io.on('connection', (socket) => {

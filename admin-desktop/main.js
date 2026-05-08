@@ -1,32 +1,41 @@
 const { app, BrowserWindow } = require('electron');
 
-// URL de tu backend (Ajustar a la URL de producción cuando lo suban a la nube)
+// URL de tu backend 
 const API_URL = 'http://localhost:3000/api/admin/estado'; 
 
 let mainWindow;
 
-app.whenReady().then(async () => {
-    // 1. Enviar señal al backend de que el cine ABRIÓ
+// 🚀 NUEVA FUNCIÓN SENIOR: Reintento Automático
+async function notificarApertura(intentos = 5) {
     try {
         await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ abierto: true })
         });
-    } catch (error) { 
-        console.error("Error conectando al servidor:", error); 
+        console.log("✅ Señal de APERTURA enviada al servidor con éxito.");
+    } catch (error) {
+        if (intentos > 0) {
+            console.log(`⏳ Servidor calentando motores. Reintentando en 2 segundos... (Intentos restantes: ${intentos})`);
+            setTimeout(() => notificarApertura(intentos - 1), 2000);
+        } else {
+            console.error("❌ No se pudo conectar al servidor tras varios intentos.");
+        }
     }
+}
+
+app.whenReady().then(() => {
+    // 1. Enviar señal al backend de que el cine ABRIÓ (usando reintentos)
+    notificarApertura();
 
     // 2. Crear la ventana del programa para el admin
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
-        autoHideMenuBar: true, // Oculta las barras superiores para que luzca nativo
+        autoHideMenuBar: true, 
     });
 
-    // 3. Cargar la interfaz de Eduardo. 
-    // Si ya tienen la PWA en internet, usarías mainWindow.loadURL('https://tu-dominio.com/admin.html')
-    // Como estamos en desarrollo local, cargamos el archivo localmente:
+    // 3. Cargar la interfaz
     mainWindow.loadFile('../frontend/admin.html');
 });
 
@@ -34,16 +43,16 @@ app.whenReady().then(async () => {
 app.on('before-quit', async (event) => {
     event.preventDefault(); 
     
-    // Enviar señal al backend de que el cine CERRÓ
     try {
         await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ abierto: false })
         });
+        console.log("🔴 Señal de CIERRE enviada al servidor.");
     } catch (error) { 
         console.error(error); 
     }
 
-    app.exit(0); // Forzar el cierre definitivo
+    app.exit(0); 
 });
