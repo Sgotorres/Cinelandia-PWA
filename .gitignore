@@ -1,5 +1,12 @@
+# Dependencias
 node_modules/
-admin-desktop/node_modules/
 backend/node_modules/
+admin-desktop/node_modules/
+
+# Variables de entorno (¡CRÍTICO!)
 .env
+backend/.env
+
+# Archivos del sistema operativo
 .DS_Store
+Thumbs.db
