@@ -41,13 +41,13 @@ DB_PORT=5432
 
 Abre tu terminal en la raíz del proyecto (carpeta Cinelandia-PWA) e instala todas las dependencias del backend y del panel administrador con un solo comando:
 
-npm install
+pnpm install
 
     🚀 Ejecución del Sistema
 
 Para encender todos los motores de Cinelandia (Backend, Frontend y Panel de Administrador), abre la terminal en la raíz del proyecto y ejecuta:
 
-npm start
+pnpm start
 
     ¿Qué sucede al ejecutar este comando?
 

@@ -8,9 +8,9 @@
     "admin-desktop"
   ],
   "scripts": {
-    "dev:backend": "npm run start --workspace=backend",
-    "dev:admin": "npm run start --workspace=admin-desktop",
-    "start": "npx concurrently \"npm run dev:backend\" \"npm run dev:admin\""
+    "dev:backend": "pnpm --filter backend start",
+    "dev:admin": "pnpm --filter admin-desktop start",
+    "start": "concurrently \"pnpm run dev:backend\" \"pnpm run dev:admin\""
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
