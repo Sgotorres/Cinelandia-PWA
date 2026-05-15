@@ -2,7 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict vmInkvpxphB6C3b5Qk7EyJxGGgaLtKBnJ3bBRGTU1RQ2otkVF5yEozdEe6Ci2LC
 
 -- Dumped from database version 17.8
 -- Dumped by pg_dump version 17.8
@@ -319,5 +318,4 @@ ALTER TABLE ONLY public.detalles_pedido
 -- PostgreSQL database dump complete
 --
 
-\unrestrict vmInkvpxphB6C3b5Qk7EyJxGGgaLtKBnJ3bBRGTU1RQ2otkVF5yEozdEe6Ci2LC
 
