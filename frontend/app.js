@@ -2,6 +2,8 @@ let carrito = [];
 let menuDataCache = [];
 const API_URL = "http://localhost:3000";
 
+let tipoEntregaSeleccionado = 'Delivery'; 
+
 const urlParams = new URLSearchParams(window.location.search);
 const numeroMesa = urlParams.get('mesa');
 
@@ -12,9 +14,35 @@ document.addEventListener('DOMContentLoaded', () => {
         tagMesa.innerText = numeroMesa;
         contenedorMesa.classList.remove('hidden');
         contenedorMesa.classList.add('flex');
+        
+        const selector = document.getElementById('selector-tipo-entrega');
+        if(selector) {
+            selector.classList.remove('flex');
+            selector.classList.add('hidden');
+        }
+    } else {
+        const selector = document.getElementById('selector-tipo-entrega');
+        if(selector) {
+            selector.classList.remove('hidden');
+            selector.classList.add('flex');
+        }
     }
     cargarMenu();
 });
+
+function setTipoEntrega(tipo) {
+    tipoEntregaSeleccionado = tipo;
+    const btnDelivery = document.getElementById('btn-delivery');
+    const btnRetiro = document.getElementById('btn-retiro');
+    
+    if (tipo === 'Delivery') {
+        btnDelivery.className = "flex-1 bg-yellow-400 text-black font-black py-3 rounded-xl text-xs transition-all shadow-[0_0_15px_rgba(250,204,21,0.2)]";
+        btnRetiro.className = "flex-1 text-gray-400 font-bold py-3 rounded-xl text-xs transition-all hover:text-white";
+    } else {
+        btnRetiro.className = "flex-1 bg-yellow-400 text-black font-black py-3 rounded-xl text-xs transition-all shadow-[0_0_15px_rgba(250,204,21,0.2)]";
+        btnDelivery.className = "flex-1 text-gray-400 font-bold py-3 rounded-xl text-xs transition-all hover:text-white";
+    }
+}
 
 async function cargarMenu() {
     try {
@@ -26,13 +54,11 @@ async function cargarMenu() {
     }
 }
 
-// 1. REEMPLAZA renderPizzas (Diseño móvil mejorado y precios reales)
 function renderPizzas(pizzas) {
     const contenedor = document.getElementById('pizza-container');
     contenedor.innerHTML = ''; 
     
     pizzas.forEach(pizza => {
-        // Leemos los 3 precios de la base de datos
         const pMediana = parseFloat(pizza.precio).toFixed(2);
         const pGrande = parseFloat(pizza.precio_g).toFixed(2);
         const pFamiliar = parseFloat(pizza.precio_f).toFixed(2);
@@ -88,24 +114,18 @@ function filtrar(categoria, botonElemento) {
     renderPizzas(filtradas);
 }
 
-// --- FUNCIÓN BLINDADA (UX MEJORADO) ---
 async function procesarPedido() {
-    // 1. Validaciones iniciales
-    if (carrito.length === 0) return alert("El carrito está vacío.");
-    if (!numeroMesa) return alert("Por favor, escanea el código QR de tu mesa antes de pedir.");
-
-    // 2. BLINDAJE VISUAL Y FUNCIONAL DEL BOTÓN
-    // Obtenemos el botón de confirmar y cambiamos su estado
-    const btnConfirmar = document.getElementById('btn-confirmar-pedido');
-    const textoOriginal = btnConfirmar.innerHTML; // Guardamos cómo se veía antes
+    if (carrito.length === 0) return mostrarAlerta("El carrito está vacío. ¡Agrega algunas pizzas galácticas!");
     
-    // Desactivamos el botón y le ponemos un mensaje de carga
+    const btnConfirmar = document.getElementById('btn-confirmar-pedido');
+    const textoOriginal = btnConfirmar.innerHTML; 
+    
     btnConfirmar.disabled = true;
     btnConfirmar.classList.add('opacity-50', 'cursor-wait');
     btnConfirmar.innerHTML = 'Enviando a la nave... 🚀 <span class="animate-pulse">...</span>';
 
     const pedidoData = {
-        mesa: numeroMesa,
+        mesa: numeroMesa ? numeroMesa : tipoEntregaSeleccionado,
         carrito: carrito.map(item => ({ 
             producto_id: item.producto_id, 
             cantidad: item.cantidad, 
@@ -123,49 +143,94 @@ async function procesarPedido() {
 
         if (res.ok) {
             const data = await res.json();
-            document.getElementById('codigo-pedido-modal').innerText = `ASTRO-${data.pedidoId}`;
+            const codigoMision = `ASTRO-${data.pedidoId}`;
+            
+            // 🚀 RELLENAR TICKET GALÁCTICO 🚀
+            document.getElementById('codigo-pedido-modal').innerText = codigoMision;
+            
+            let ticketHTML = '';
+            let totalTicket = 0;
+            
+            carrito.forEach(item => {
+                const sub = item.precio * item.cantidad;
+                totalTicket += sub;
+                ticketHTML += `<div class="flex justify-between"><span><span class="text-yellow-400 font-bold">${item.cantidad}x</span> ${item.nombre}</span><span>$${sub.toFixed(2)}</span></div>`;
+            });
+            
+            document.getElementById('ticket-items').innerHTML = ticketHTML;
+            document.getElementById('ticket-total-final').innerText = `$${totalTicket.toFixed(2)}`;
+
+            // LÓGICA INTELIGENTE DEL MODAL (Mesa vs Delivery)
+            const contexto = document.getElementById('modal-mensaje-contexto');
+            const botones = document.getElementById('modal-botones-container');
+            
+            if (numeroMesa) {
+                // ESCENARIO A: EL CLIENTE ESTÁ EN UNA MESA
+                contexto.innerHTML = '¡Tu pedido ya está en nuestra cocina! Te lo llevaremos a tu mesa pronto. El pago se realizará con tu mesero.';
+                botones.innerHTML = `<button onclick="irAlRadarDesdeModal()" class="w-full bg-yellow-400 text-black px-8 py-4 rounded-xl font-black text-lg hover:bg-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.3)] transition-all">Rastrear mi Pedido 📡</button>`;
+            } else {
+                // ESCENARIO B: DELIVERY / RETIRO
+                contexto.innerHTML = 'Tu orden fue registrada. Por favor, realiza el pago vía WhatsApp para que la cocina inicie la preparación.';
+                
+                // Construir mensaje predeterminado de WhatsApp
+                let msjWA = `🚀 *PIZZA PLANETA - NUEVO PEDIDO* 🚀\n`;
+                msjWA += `🛸 *Misión:* ${codigoMision}\n`;
+                msjWA += `📍 *Entrega:* ${tipoEntregaSeleccionado}\n\n`;
+                msjWA += `🍕 *Detalle de la orden:*\n`;
+                carrito.forEach(item => {
+                    msjWA += `- ${item.cantidad}x ${item.nombre} - $${(item.precio * item.cantidad).toFixed(2)}\n`;
+                });
+                msjWA += `\n💰 *TOTAL A PAGAR: $${totalTicket.toFixed(2)}*\n\n`;
+                msjWA += `¡Hola base espacial! Acabo de realizar este pedido en la web y quiero coordinar mi pago. 👽🍕`;
+                
+                const linkWA = `https://wa.me/584147363029?text=${encodeURIComponent(msjWA)}`;
+
+                botones.innerHTML = `
+                    <a href="${linkWA}" target="_blank" class="w-full bg-green-500 text-white px-8 py-4 rounded-xl font-black text-lg hover:bg-green-400 shadow-[0_0_15px_rgba(34,197,94,0.3)] block no-underline flex items-center justify-center gap-2 transition-all">
+                        Pagar en WhatsApp 
+                        <svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor"><path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 001.333 4.993L2 22l5.233-1.237a9.994 9.994 0 004.779 1.217h.004c5.505 0 9.988-4.478 9.989-9.984 0-2.669-1.037-5.176-2.922-7.062A9.935 9.935 0 0012.012 2zm5.72 14.156c-.242.684-1.408 1.309-1.95 1.428-.5.107-1.15.228-3.415-.71-2.906-1.205-4.757-4.237-4.898-4.426-.142-.19-1.168-1.554-1.168-2.966 0-1.412.736-2.113.999-2.398.263-.285.57-.356.76-.356.19 0 .38.001.545.009.176.009.412-.066.645.498.243.589.835 2.039.911 2.193.076.154.127.333.032.523-.095.19-.143.309-.285.475-.143.166-.3.356-.428.5-.143.143-.295.3-.133.58.161.279.718 1.188 1.543 1.923 1.066.95 1.956 1.242 2.242 1.385.285.143.45.119.617-.066.166-.185.712-.827.902-1.112.19-.285.38-.238.641-.143.261.095 1.647.778 1.932.92.285.142.475.214.546.333.071.119.071.685-.171 1.369z"/></svg>
+                    </a>
+                    <button onclick="irAlRadarDesdeModal()" class="w-full text-gray-400 font-bold py-2 hover:text-white transition-colors text-sm">Ya pagué, ir al Radar 📡</button>
+                `;
+            }
+
             document.getElementById('modal-confirmacion').classList.remove('hidden');
+            
+            // Limpiamos el carrito una vez generado el ticket visual
             carrito = [];
             actualizarCarritoVisual();
             toggleCart();
         } else {
-            // Si el servidor responde con error (ej. 500)
-            alert("Hubo un problema de comunicación con la base de control. Intenta de nuevo.");
+            mostrarAlerta("Hubo un problema de comunicación con la base de control. Intenta de nuevo.");
         }
     } catch (e) {
-        alert("Error de conexión. Revisa tu señal e intenta de nuevo.");
+        mostrarAlerta("Error de conexión. Revisa tu señal e intenta de nuevo.");
     } finally {
-        // 3. RESTAURACIÓN DEL BOTÓN
-        // Sin importar si fue exitoso o falló, siempre volveamos a encender el botón
-        // y le regresamos su texto original para futuros pedidos.
         btnConfirmar.disabled = false;
         btnConfirmar.classList.remove('opacity-50', 'cursor-wait');
         btnConfirmar.innerHTML = textoOriginal;
     }
 }
 
-// 2. REEMPLAZA agregarAlCarrito (Lógica para acumular en vez de repetir)
 function agregarAlCarrito(id, nombre, precio, talla) {
     const nombreCompleto = `${nombre} (${talla})`;
-    // Buscamos si ya existe exactamente esa pizza con ese tamaño
     const index = carrito.findIndex(item => item.producto_id === id && item.talla === talla);
     
     if (index !== -1) {
-        carrito[index].cantidad += 1; // Solo aumentamos la cantidad
+        carrito[index].cantidad += 1; 
     } else {
         carrito.push({ 
             producto_id: id, 
             nombre: nombreCompleto, 
             precio: parseFloat(precio),
             talla: talla,
-            cantidad: 1 // Propiedad nueva
+            cantidad: 1 
         });
     }
     actualizarCarritoVisual();
     if (document.getElementById('cart-sidebar').classList.contains('translate-x-full')) toggleCart();
 }
 
-// 3. REEMPLAZA actualizarCarritoVisual (Para mostrar las cantidades)
 function actualizarCarritoVisual() {
     const contenedorItems = document.getElementById('cart-items');
     const totalElemento = document.getElementById('cart-total');
@@ -198,11 +263,10 @@ function actualizarCarritoVisual() {
     totalElemento.innerText = `$${sumaTotal.toFixed(2)}`;
 }
 
-// 4. NUEVA FUNCIÓN: Eliminar función vieja y poner esta
 function cambiarCantidad(index, delta) {
     carrito[index].cantidad += delta;
     if (carrito[index].cantidad <= 0) {
-        carrito.splice(index, 1); // Si llega a 0, la borramos del carrito
+        carrito.splice(index, 1);
     }
     actualizarCarritoVisual();
 }
@@ -238,27 +302,36 @@ window.addEventListener('scroll', () => {
 });
 
 function irAlRadarDesdeModal() {
+    const codigoGenerado = document.getElementById('codigo-pedido-modal').innerText;
     cerrarModal();
-    document.getElementById('codigo-rastreo').scrollIntoView({ behavior: 'smooth' });
+    
+    const inputRastreo = document.getElementById('codigo-rastreo');
+    inputRastreo.value = codigoGenerado;
+    
+    const seccionRadar = inputRastreo.closest('section');
+    seccionRadar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    setTimeout(() => {
+        verificarRastreo();
+    }, 800);
 }
 
-// --- FUNCIONES DEL RADAR EN TIEMPO REAL ---
 async function rastrearPedido() {
     let input = document.getElementById('codigo-rastreo').value.trim().toUpperCase();
     
-    if (!input) return alert("Ingresa un código para escanear.");
+    if (!input) return mostrarAlerta("Ingresa un código para escanear.");
 
     if (!input.startsWith('ASTRO-')) {
         if (!isNaN(input)) {
             input = `ASTRO-${input}`;
         } else {
-            return alert("¡Capitán! Ingresa solo el número de tu pedido o el código completo (Ej. ASTRO-12)");
+            return mostrarAlerta("¡Capitán! Ingresa solo el número de tu pedido o el código completo (Ej. ASTRO-12)");
         }
     }
 
     const id = input.split('-')[1]; 
     
-    const boton = document.querySelector('button[onclick="rastrearPedido()"]');
+    const boton = document.querySelector('button[onclick="verificarRastreo()"]');
     if(boton) boton.innerText = "ESCANEANDO... 📡";
     
     try {
@@ -270,19 +343,24 @@ async function rastrearPedido() {
         
         actualizarRadarUI(data.estado);
         
+        // 🚀 ACTUALIZAR EL BOTÓN SALVAVIDAS CON EL CÓDIGO ACTUAL 🚀
+        const btnSoporte = document.getElementById('btn-soporte-radar');
+        if (btnSoporte) {
+            const msjAyuda = `Hola base espacial 🛸. Estoy rastreando mi misión ASTRO-${id} y necesito contactarme con ustedes.`;
+            btnSoporte.href = `https://wa.me/584147363029?text=${encodeURIComponent(msjAyuda)}`;
+        }
+        
         document.getElementById('panel-telemetria').classList.remove('hidden');
     } catch (e) {
-        alert("Coordenadas no encontradas. Verifica tu código de misión.");
+        mostrarAlerta("Coordenadas no encontradas. Verifica tu código de misión.");
         const panel = document.getElementById('panel-telemetria');
         if(panel) panel.classList.add('hidden');
     } finally {
-        if(boton) boton.innerText = "ESCANEAR SECTOR";
+        if(boton) boton.innerText = "ESCANEAR";
     }
 }
 
-// ¡ESTA ERA LA FUNCIÓN QUE FALTABA PARA ENCENDER LAS LUCES!
 function actualizarRadarUI(estado) {
-    // 1. Apagamos todas las luces primero
     for(let i=1; i<=4; i++) {
         const paso = document.getElementById(`paso-${i}`);
         if(!paso) continue;
@@ -294,19 +372,16 @@ function actualizarRadarUI(estado) {
     const linea = document.getElementById('linea-progreso');
     let nivel = 1;
 
-    // 2. Revisamos en qué estado está el pedido en la base de datos
     if (estado === 'pendiente') nivel = 1;
     if (estado === 'cocinando') nivel = 2;
     if (estado === 'listo') nivel = 3;
     if (estado === 'finalizado') nivel = 4;
 
-    // 3. Movemos la barra verde del fondo
     if(linea) {
         const porcentajes = { 1: '0%', 2: '33%', 3: '66%', 4: '100%' };
         linea.style.width = porcentajes[nivel];
     }
 
-    // 4. Encendemos las luces hasta el nivel actual
     for(let i=1; i<=nivel; i++) {
         const paso = document.getElementById(`paso-${i}`);
         if(!paso) continue;
@@ -315,24 +390,20 @@ function actualizarRadarUI(estado) {
         icono.classList.add('bg-yellow-400', 'text-black', 'border-yellow-400', 'shadow-[0_0_15px_rgba(250,204,21,0.5)]');
     }
 }
-// --- CONTROL DE ESTADO DE LA TIENDA ---
+
 const API_ESTADO_URL = `${API_URL}/api/estado`;
 const alertaCerrado = document.getElementById('alerta-carrito-cerrado');
 const btnConfirmar = document.getElementById('btn-confirmar-pedido');
 
-// Iniciar conexión con Socket.io
 const socket = io(API_URL);
 
-// Función que enciende o apaga el bloqueo del carrito
 function manejarEstadoTienda(abierto) {
     if (abierto) {
-        // Tienda abierta: Ocultamos alerta y habilitamos el botón
         alertaCerrado.classList.add('hidden');
         btnConfirmar.classList.remove('opacity-50', 'cursor-not-allowed');
         btnConfirmar.disabled = false;
         console.log("🟢 La tienda está abierta, el cliente puede pedir.");
     } else {
-        // Tienda cerrada: Mostramos alerta y deshabilitamos el botón
         alertaCerrado.classList.remove('hidden');
         btnConfirmar.classList.add('opacity-50', 'cursor-not-allowed');
         btnConfirmar.disabled = true;
@@ -340,7 +411,6 @@ function manejarEstadoTienda(abierto) {
     }
 }
 
-// 1. Verificar estado apenas el cliente entra a la página
 async function verificarEstadoInicial() {
     try {
         const respuesta = await fetch(API_ESTADO_URL);
@@ -353,7 +423,6 @@ async function verificarEstadoInicial() {
 
 verificarEstadoInicial();
 
-// 2. Escuchar cambios en tiempo real desde el administrador
 socket.on('cambio_estado_tienda', (data) => {
     manejarEstadoTienda(data.abierto);
 });
