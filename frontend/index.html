@@ -28,6 +28,10 @@
             <div class="absolute bottom-[25%] left-[25%] opacity-50 animate-orbit-3"><svg class="w-5 h-5 star-glow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L13.5 10.5L24 12L13.5 13.5L12 24L10.5 13.5L0 12L10.5 10.5L12 0Z" fill="currentColor"/></svg></div>
         </div>
 
+        <img src="icon-512.png" alt="Logo Pizza Planeta" class="absolute top-4 right-4 md:top-6 md:right-6 w-24 md:w-32 z-0 pointer-events-none drop-shadow-xl">
+
+        <img src="marciano.png" alt="Marcianos Pizza Planeta" class="absolute -bottom-10 md:bottom-0 -left-10 md:left-0 w-64 md:w-96 opacity-40 z-0 pointer-events-none drop-shadow-2xl">
+
         <div class="relative z-10 flex flex-col items-center">
             <div id="contenedor-cohete" class="relative mb-8 z-20 flex flex-col items-center w-32 md:w-44 origin-bottom">
                 <div class="absolute inset-0 bg-[#3b0764] blur-2xl rounded-full scale-150 opacity-50 z-0 pointer-events-none"></div>
@@ -77,16 +81,20 @@
         </div>
     </main>
     
-    <section class="py-20 relative z-10">
-            <div class="max-w-4xl mx-auto px-6">
-                <div class="bg-black/40 p-10 md:p-14 rounded-[3rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-md text-center relative overflow-hidden">
+    <section class="py-20 relative z-10 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-6 relative flex items-center">
+            
+            <img src="villano.png" alt="Villano Zurg" class="absolute -bottom-24 md:-bottom-[120px] lg:-bottom-[150px] -right-5 md:right-5 lg:right-20 w-60 md:w-[320px] lg:w-[380px] opacity-20 md:opacity-100 z-0 pointer-events-none drop-shadow-2xl">
+
+            <div class="w-full max-w-3xl relative z-10 md:mr-auto">
+                <div class="bg-black/40 p-8 md:p-12 rounded-[3rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-md text-center relative overflow-hidden">
                     <div class="absolute -top-20 -right-20 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
                     <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
                     <h2 class="text-4xl md:text-5xl font-black text-white tracking-tighter italic mb-4 relative z-10">RADAR DE <span class="text-yellow-400">PEDIDOS</span> 📡</h2>
                     <p class="text-gray-300 text-lg uppercase tracking-widest mb-10 relative z-10">Rastrea tu pedido</p>
-                    <div class="flex flex-col md:flex-row gap-4 justify-center max-w-2xl mx-auto mb-12 relative z-10">
+                    <div class="flex flex-col md:flex-row gap-4 justify-center max-w-2xl mx-auto mb-10 relative z-10">
                         <input type="text" id="codigo-rastreo" placeholder="Ej. ASTRO-123" class="flex-grow bg-white/5 border border-white/20 rounded-2xl px-6 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 uppercase font-bold tracking-widest transition-all">
-                        <button onclick="rastrearPedido()" class="bg-yellow-400 text-black px-8 py-4 rounded-2xl font-black hover:bg-yellow-300 transition-all active:scale-95 shadow-[0_0_15px_rgba(250,204,21,0.2)] whitespace-nowrap">ESCANEAR</button>
+                        <button onclick="verificarRastreo()" class="bg-yellow-400 text-black px-8 py-4 rounded-2xl font-black hover:bg-yellow-300 transition-all active:scale-95 shadow-[0_0_15px_rgba(250,204,21,0.2)] whitespace-nowrap">ESCANEAR</button>
                     </div>
                     
                     <div id="panel-telemetria" class="hidden relative z-10 mt-8 pt-8 border-t border-white/10">
@@ -118,30 +126,53 @@
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
     
     <footer class="mt-10 py-16 bg-black/30 backdrop-blur-xl border-t border-white/10">
             <div class="max-w-6xl mx-auto px-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    <div class="bg-black/40 p-12 rounded-[3rem] border border-white/10 flex flex-col items-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-md transition-transform hover:-translate-y-2">
-                        <h3 class="text-2xl font-black text-white mb-1 uppercase italic">Instagram</h3>
-                        <p class="text-yellow-400 font-bold mb-8">@pizzaplaneta</p>
-                        <div class="w-40 h-40 bg-white rounded-2xl p-2 flex items-center justify-center overflow-hidden">
-                            <img src="qr_instagram.png" alt="QR Instagram" onerror="this.src='https://via.placeholder.com/150?text=QR+IG'" class="w-full h-full object-contain">
+                    <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" class="group bg-black/40 p-12 rounded-[3rem] border border-white/10 flex flex-col items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-md transition-all duration-300 hover:-translate-y-2 hover:border-pink-500/50 hover:shadow-[0_20px_50px_rgba(236,72,153,0.2)] text-center no-underline">
+                        <div class="w-24 h-24 mb-6 text-pink-500 group-hover:scale-110 transition-transform duration-300">
+                            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                            </svg>
                         </div>
-                    </div>
+                        <h3 class="text-3xl font-black text-white mb-2 uppercase italic group-hover:text-pink-400 transition-colors">Instagram</h3>
+                        <p class="text-gray-400 font-medium tracking-widest uppercase text-sm">@pizzaplaneta</p>
+                    </a>
                     
-                    <div class="bg-black/40 p-12 rounded-[3rem] border border-white/10 flex flex-col items-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-md transition-transform hover:-translate-y-2">
-                        <h3 class="text-2xl font-black text-white mb-1 uppercase italic">WhatsApp</h3>
-                        <p class="text-green-400 font-bold mb-8">+1 (555) 123-4567</p>
-                        <div class="w-40 h-40 bg-white rounded-2xl p-2 flex items-center justify-center overflow-hidden">
-                            <img src="qr_whatsapp.png" alt="QR WhatsApp" onerror="this.src='https://via.placeholder.com/150?text=QR+WA'" class="w-full h-full object-contain">
+                    <a href="https://wa.me/15551234567" target="_blank" rel="noopener noreferrer" class="group bg-black/40 p-12 rounded-[3rem] border border-white/10 flex flex-col items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-md transition-all duration-300 hover:-translate-y-2 hover:border-green-500/50 hover:shadow-[0_20px_50px_rgba(34,197,94,0.2)] text-center no-underline">
+                        <div class="w-24 h-24 mb-6 text-green-500 group-hover:scale-110 transition-transform duration-300">
+                            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 001.333 4.993L2 22l5.233-1.237a9.994 9.994 0 004.779 1.217h.004c5.505 0 9.988-4.478 9.989-9.984 0-2.669-1.037-5.176-2.922-7.062A9.935 9.935 0 0012.012 2zm5.72 14.156c-.242.684-1.408 1.309-1.95 1.428-.5.107-1.15.228-3.415-.71-2.906-1.205-4.757-4.237-4.898-4.426-.142-.19-1.168-1.554-1.168-2.966 0-1.412.736-2.113.999-2.398.263-.285.57-.356.76-.356.19 0 .38.001.545.009.176.009.412-.066.645.498.243.589.835 2.039.911 2.193.076.154.127.333.032.523-.095.19-.143.309-.285.475-.143.166-.3.356-.428.5-.143.143-.295.3-.133.58.161.279.718 1.188 1.543 1.923 1.066.95 1.956 1.242 2.242 1.385.285.143.45.119.617-.066.166-.185.712-.827.902-1.112.19-.285.38-.238.641-.143.261.095 1.647.778 1.932.92.285.142.475.214.546.333.071.119.071.685-.171 1.369z"/>
+                            </svg>
                         </div>
+                        <h3 class="text-3xl font-black text-white mb-2 uppercase italic group-hover:text-green-400 transition-colors">WhatsApp</h3>
+                        <p class="text-gray-400 font-medium tracking-widest uppercase text-sm">+1 (555) 123-4567</p>
+                    </a>
+                </div>
+                
+                <div class="mt-12 relative w-full h-80 md:h-96 rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] group">
+                    <div class="absolute inset-0 bg-[url('mapa.png')] bg-cover bg-center bg-no-repeat opacity-40 group-hover:opacity-70 transition-opacity duration-500"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#050b18] via-[#050b18]/60 to-transparent"></div>
+                    <img src="buzz.png" alt="Buzz Lightyear" class="absolute bottom-4 md:bottom-8 -right-5 md:right-10 h-[60%] md:h-[85%] z-[5] pointer-events-none drop-shadow-2xl opacity-60 md:opacity-100 transition-transform duration-500 group-hover:scale-105 origin-bottom">
+                    <div class="absolute inset-0 flex flex-col items-center justify-end pb-12 text-center z-10 px-4">
+                        <h3 class="text-3xl md:text-4xl font-black text-white italic tracking-tighter mb-2">NUESTRA <span class="text-yellow-400">BASE ESPACIAL</span> 📍</h3>
+                        <p class="text-gray-300 font-medium mb-8 uppercase tracking-widest text-sm">Cinelandia - San Juan de Colón, Táchira</p>
+                        <a href="https://www.google.com/maps/search/?api=1&query=8.036783237417783,-72.2644739228238" target="_blank" rel="noopener noreferrer" 
+                           class="group bg-yellow-400 text-black px-8 py-4 rounded-full font-black flex items-center gap-3 hover:bg-yellow-300 hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(250,204,21,0.4)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 group-hover:animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            ABRIR EN GOOGLE MAPS
+                        </a>
                     </div>
                 </div>
                 
-                <div class="mt-10 text-center text-gray-400 text-xs uppercase tracking-widest">
-                    <p>&copy; 2026 Cinelandia - San Juan de Colón | Hecho para el universo 🪐</p>
+                <div class="mt-12 text-center text-gray-400 text-xs uppercase tracking-widest">
+                    <p>© 2026 Cinelandia - San Juan de Colón | Hecho para el universo 🪐</p>
                 </div>
             </div>
         </footer>
@@ -164,7 +195,6 @@
                 <span class="text-gray-400 font-bold">TOTAL:</span>
                 <span id="cart-total" class="text-2xl font-black text-green-400">$0.00</span>
             </div>
-            <!-- NUEVA ALERTA DE TIENDA CERRADA -->
             <div id="alerta-carrito-cerrado" class="hidden bg-red-500/10 border border-red-500/50 text-red-400 text-xs font-bold p-3 rounded-xl mb-4 text-center">
                 En este momento la cocina está cerrada. ¡Revisa nuestro menú y vuelve pronto!
             </div>
@@ -187,6 +217,21 @@
             <button onclick="irAlRadarDesdeModal()" class="w-full bg-yellow-400 text-black px-8 py-5 rounded-full font-black text-xl hover:bg-yellow-300">Rastrear mi Pedido 📡</button>
         </div>
     </div>
+
+    <div id="modal-alerta-codigo" class="hidden fixed inset-0 z-[100] items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="cerrarModalAlerta()"></div>
+        
+        <div class="relative w-full max-w-xs md:max-w-md md:mr-24 flex items-center justify-center mt-10 md:mt-0">
+            <div class="relative bg-[#0d1526] p-8 md:p-10 rounded-[3rem] border-2 border-yellow-400/50 shadow-[0_20px_50px_rgba(250,204,21,0.2)] backdrop-blur-xl w-full text-center z-10">
+                <button onclick="cerrarModalAlerta()" class="absolute top-6 right-8 text-gray-500 hover:text-white text-2xl z-30">✕</button>
+                <h2 class="text-3xl md:text-4xl font-black text-white tracking-tighter italic mb-4">¡ALTO <span class="text-yellow-400">AHÍ</span>! 🛑</h2>
+                <p class="text-gray-300 text-lg mb-8 relative z-30">Por favor ingresa tu código de misión para buscar en el radar.</p>
+                <button onclick="cerrarModalAlerta()" class="w-full bg-yellow-400 text-black px-8 py-4 rounded-full font-black text-xl hover:bg-yellow-300 transition-all shadow-[0_0_20px_rgba(250,204,21,0.4)] relative z-30">ENTENDIDO</button>
+            </div>
+            
+            <img src="marciano2.png" alt="Marciano" class="absolute -right-32 md:-right-52 top-1/2 -translate-y-1/2 w-40 md:w-64 z-20 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] pointer-events-none">
+        </div>
+    </div>
     
     <div id="btn-subir" class="fixed bottom-8 left-8 z-50 opacity-0 pointer-events-none transition-all duration-500 translate-y-4">
         <button onclick="subirAlInicio()" class="bg-black/60 backdrop-blur-md border border-white/10 text-white p-4 rounded-full hover:bg-yellow-400 hover:text-black transition-all">
@@ -194,15 +239,33 @@
         </button>
     </div>
 
-<!-- ... tu código superior ... -->
     <script src="http://localhost:3000/socket.io/socket.io.js"></script>
     <script src="app.js"></script>
+    
+    <script>
+        function verificarRastreo() {
+            const input = document.getElementById('codigo-rastreo');
+            if (!input.value || input.value.trim() === "") {
+                document.getElementById('modal-alerta-codigo').classList.remove('hidden');
+                document.getElementById('modal-alerta-codigo').classList.add('flex');
+            } else {
+                if(typeof rastrearPedido === 'function') {
+                    rastrearPedido();
+                }
+            }
+        }
+        
+        function cerrarModalAlerta() {
+            document.getElementById('modal-alerta-codigo').classList.add('hidden');
+            document.getElementById('modal-alerta-codigo').classList.remove('flex');
+        }
+    </script>
+
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
         }
     </script>
-    <!-- REGISTRO DEL SERVICE WORKER (PWA) -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
