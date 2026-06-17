@@ -36,11 +36,17 @@ function setTipoEntrega(tipo) {
     const btnRetiro = document.getElementById('btn-retiro');
     
     if (tipo === 'Delivery') {
-        btnDelivery.className = "flex-1 bg-yellow-400 text-black font-black py-3 rounded-xl text-xs transition-all shadow-[0_0_15px_rgba(250,204,21,0.2)]";
-        btnRetiro.className = "flex-1 text-gray-400 font-bold py-3 rounded-xl text-xs transition-all hover:text-white";
+        btnDelivery.className = "flex-1 flex items-center justify-center gap-1 md:gap-1.5 bg-yellow-400 text-black font-black py-2.5 md:py-3 rounded-lg md:rounded-xl text-[10px] md:text-xs transition-all shadow-[0_0_15px_rgba(250,204,21,0.2)]";
+        btnDelivery.innerHTML = '<img src="delivery.png" alt="Delivery" class="h-3.5 md:h-4 w-auto drop-shadow-sm"> DELIVERY';
+        
+        btnRetiro.className = "flex-1 flex items-center justify-center gap-1 md:gap-1.5 text-gray-400 font-bold py-2.5 md:py-3 rounded-lg md:rounded-xl text-[10px] md:text-xs transition-all hover:text-white";
+        btnRetiro.innerHTML = '<img src="buzzcorriendo.png" alt="Retiro" class="h-3.5 md:h-4 w-auto drop-shadow-sm opacity-50"> RETIRO';
     } else {
-        btnRetiro.className = "flex-1 bg-yellow-400 text-black font-black py-3 rounded-xl text-xs transition-all shadow-[0_0_15px_rgba(250,204,21,0.2)]";
-        btnDelivery.className = "flex-1 text-gray-400 font-bold py-3 rounded-xl text-xs transition-all hover:text-white";
+        btnRetiro.className = "flex-1 flex items-center justify-center gap-1 md:gap-1.5 bg-yellow-400 text-black font-black py-2.5 md:py-3 rounded-lg md:rounded-xl text-[10px] md:text-xs transition-all shadow-[0_0_15px_rgba(250,204,21,0.2)]";
+        btnRetiro.innerHTML = '<img src="buzzcorriendo.png" alt="Retiro" class="h-3.5 md:h-4 w-auto drop-shadow-sm"> RETIRO';
+        
+        btnDelivery.className = "flex-1 flex items-center justify-center gap-1 md:gap-1.5 text-gray-400 font-bold py-2.5 md:py-3 rounded-lg md:rounded-xl text-[10px] md:text-xs transition-all hover:text-white";
+        btnDelivery.innerHTML = '<img src="delivery.png" alt="Delivery" class="h-3.5 md:h-4 w-auto drop-shadow-sm opacity-50"> DELIVERY';
     }
 }
 
@@ -64,29 +70,29 @@ function renderPizzas(pizzas) {
         const pFamiliar = parseFloat(pizza.precio_f).toFixed(2);
 
         const tarjeta = `
-            <div class="group bg-[#0d1526] text-white rounded-[2.5rem] overflow-hidden shadow-2xl border border-gray-800 hover:border-yellow-400/50 transition-all duration-300">
-                <div class="relative h-48 overflow-hidden">
+            <div class="group bg-[#0d1526] text-white rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl border border-gray-800 hover:border-yellow-400/50 transition-all duration-300 flex flex-col h-full">
+                <div class="relative h-28 md:h-48 overflow-hidden shrink-0">
                     <img src="${pizza.imagen_url || 'https://via.placeholder.com/400x300'}" class="w-full h-full object-cover">
                 </div>
-                <div class="p-6">
-                    <h2 class="text-xl font-black italic uppercase mb-1 text-yellow-400">${pizza.nombre}</h2>
-                    <p class="text-gray-400 text-xs mb-4 h-10 overflow-hidden leading-tight">${pizza.descripcion || ''}</p>
+                <div class="p-3 sm:p-4 md:p-6 flex flex-col flex-grow">
+                    <h2 class="text-sm sm:text-base md:text-xl font-black italic uppercase mb-1 text-yellow-400 leading-tight">${pizza.nombre}</h2>
+                    <p class="text-gray-400 text-[10px] md:text-xs mb-3 md:mb-4 line-clamp-2 leading-tight">${pizza.descripcion || ''}</p>
                     
-                    <div class="grid grid-cols-3 gap-2 mt-auto">
+                    <div class="flex flex-col gap-1.5 md:grid md:grid-cols-3 md:gap-2 mt-auto">
                         <button onclick="agregarAlCarrito(${pizza.id}, '${pizza.nombre}', ${pMediana}, 'Mediana')" 
-                                class="flex flex-col items-center justify-center bg-white/5 hover:bg-yellow-400 hover:text-black py-3 rounded-xl border border-white/10 hover:border-transparent transition-all active:scale-95 group/btn">
-                            <span class="text-xs font-bold mb-1 text-gray-300 group-hover/btn:text-black">Mediana</span>
-                            <span class="text-[11px] font-black text-green-400 group-hover/btn:text-black">$${pMediana}</span>
+                                class="flex md:flex-col items-center justify-between md:justify-center px-2.5 py-1.5 md:py-3 bg-white/5 hover:bg-yellow-400 hover:text-black rounded-lg md:rounded-xl border border-white/10 hover:border-transparent transition-all active:scale-95 group/btn">
+                            <span class="text-[9px] sm:text-[10px] md:text-xs font-bold md:mb-1 text-gray-300 group-hover/btn:text-black">Mediana</span>
+                            <span class="text-[10px] sm:text-[11px] font-black text-green-400 group-hover/btn:text-black">$${pMediana}</span>
                         </button>
                         <button onclick="agregarAlCarrito(${pizza.id}, '${pizza.nombre}', ${pGrande}, 'Grande')" 
-                                class="flex flex-col items-center justify-center bg-white/5 hover:bg-yellow-400 hover:text-black py-3 rounded-xl border border-white/10 hover:border-transparent transition-all active:scale-95 group/btn">
-                            <span class="text-xs font-bold mb-1 text-gray-300 group-hover/btn:text-black">Grande</span>
-                            <span class="text-[11px] font-black text-green-400 group-hover/btn:text-black">$${pGrande}</span>
+                                class="flex md:flex-col items-center justify-between md:justify-center px-2.5 py-1.5 md:py-3 bg-white/5 hover:bg-yellow-400 hover:text-black rounded-lg md:rounded-xl border border-white/10 hover:border-transparent transition-all active:scale-95 group/btn">
+                            <span class="text-[9px] sm:text-[10px] md:text-xs font-bold md:mb-1 text-gray-300 group-hover/btn:text-black">Grande</span>
+                            <span class="text-[10px] sm:text-[11px] font-black text-green-400 group-hover/btn:text-black">$${pGrande}</span>
                         </button>
                         <button onclick="agregarAlCarrito(${pizza.id}, '${pizza.nombre}', ${pFamiliar}, 'Familiar')" 
-                                class="flex flex-col items-center justify-center bg-white/5 hover:bg-yellow-400 hover:text-black py-3 rounded-xl border border-white/10 hover:border-transparent transition-all active:scale-95 group/btn">
-                            <span class="text-xs font-bold mb-1 text-gray-300 group-hover/btn:text-black">Familiar</span>
-                            <span class="text-[11px] font-black text-green-400 group-hover/btn:text-black">$${pFamiliar}</span>
+                                class="flex md:flex-col items-center justify-between md:justify-center px-2.5 py-1.5 md:py-3 bg-white/5 hover:bg-yellow-400 hover:text-black rounded-lg md:rounded-xl border border-white/10 hover:border-transparent transition-all active:scale-95 group/btn">
+                            <span class="text-[9px] sm:text-[10px] md:text-xs font-bold md:mb-1 text-gray-300 group-hover/btn:text-black">Familiar</span>
+                            <span class="text-[10px] sm:text-[11px] font-black text-green-400 group-hover/btn:text-black">$${pFamiliar}</span>
                         </button>
                     </div>
                 </div>
@@ -145,7 +151,6 @@ async function procesarPedido() {
             const data = await res.json();
             const codigoMision = `ASTRO-${data.pedidoId}`;
             
-            // 🚀 RELLENAR TICKET GALÁCTICO 🚀
             document.getElementById('codigo-pedido-modal').innerText = codigoMision;
             
             let ticketHTML = '';
@@ -160,19 +165,15 @@ async function procesarPedido() {
             document.getElementById('ticket-items').innerHTML = ticketHTML;
             document.getElementById('ticket-total-final').innerText = `$${totalTicket.toFixed(2)}`;
 
-            // LÓGICA INTELIGENTE DEL MODAL (Mesa vs Delivery)
             const contexto = document.getElementById('modal-mensaje-contexto');
             const botones = document.getElementById('modal-botones-container');
             
             if (numeroMesa) {
-                // ESCENARIO A: EL CLIENTE ESTÁ EN UNA MESA
-                contexto.innerHTML = '¡Tu pedido ya está en nuestra cocina! Te lo llevaremos a tu mesa pronto. El pago se realizará con tu mesero.';
-                botones.innerHTML = `<button onclick="irAlRadarDesdeModal()" class="w-full bg-yellow-400 text-black px-8 py-4 rounded-xl font-black text-lg hover:bg-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.3)] transition-all">Rastrear mi Pedido 📡</button>`;
+                contexto.innerHTML = '¡Tu pedido ya está en cocina! Te lo llevaremos a tu mesa pronto. El pago se realizará con tu mesero.';
+                botones.innerHTML = `<button onclick="irAlRadarDesdeModal()" class="w-full bg-yellow-400 text-black px-6 md:px-8 py-3 md:py-4 rounded-xl font-black text-sm md:text-lg hover:bg-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.3)] transition-all">Rastrear mi Pedido 📡</button>`;
             } else {
-                // ESCENARIO B: DELIVERY / RETIRO
-                contexto.innerHTML = 'Tu orden fue registrada. Por favor, realiza el pago vía WhatsApp para que la cocina inicie la preparación.';
+                contexto.innerHTML = 'Orden registrada. Realiza el pago vía WhatsApp para que la cocina inicie tu pedido.';
                 
-                // Construir mensaje predeterminado de WhatsApp
                 let msjWA = `🚀 *PIZZA PLANETA - NUEVO PEDIDO* 🚀\n`;
                 msjWA += `🛸 *Misión:* ${codigoMision}\n`;
                 msjWA += `📍 *Entrega:* ${tipoEntregaSeleccionado}\n\n`;
@@ -186,17 +187,16 @@ async function procesarPedido() {
                 const linkWA = `https://wa.me/584147363029?text=${encodeURIComponent(msjWA)}`;
 
                 botones.innerHTML = `
-                    <a href="${linkWA}" target="_blank" class="w-full bg-green-500 text-white px-8 py-4 rounded-xl font-black text-lg hover:bg-green-400 shadow-[0_0_15px_rgba(34,197,94,0.3)] block no-underline flex items-center justify-center gap-2 transition-all">
+                    <a href="${linkWA}" target="_blank" class="w-full bg-green-500 text-white px-6 md:px-8 py-3 md:py-4 rounded-xl font-black text-sm md:text-lg hover:bg-green-400 shadow-[0_0_15px_rgba(34,197,94,0.3)] block no-underline flex items-center justify-center gap-2 transition-all">
                         Pagar en WhatsApp 
-                        <svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor"><path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 001.333 4.993L2 22l5.233-1.237a9.994 9.994 0 004.779 1.217h.004c5.505 0 9.988-4.478 9.989-9.984 0-2.669-1.037-5.176-2.922-7.062A9.935 9.935 0 0012.012 2zm5.72 14.156c-.242.684-1.408 1.309-1.95 1.428-.5.107-1.15.228-3.415-.71-2.906-1.205-4.757-4.237-4.898-4.426-.142-.19-1.168-1.554-1.168-2.966 0-1.412.736-2.113.999-2.398.263-.285.57-.356.76-.356.19 0 .38.001.545.009.176.009.412-.066.645.498.243.589.835 2.039.911 2.193.076.154.127.333.032.523-.095.19-.143.309-.285.475-.143.166-.3.356-.428.5-.143.143-.295.3-.133.58.161.279.718 1.188 1.543 1.923 1.066.95 1.956 1.242 2.242 1.385.285.143.45.119.617-.066.166-.185.712-.827.902-1.112.19-.285.38-.238.641-.143.261.095 1.647.778 1.932.92.285.142.475.214.546.333.071.119.071.685-.171 1.369z"/></svg>
+                        <svg viewBox="0 0 24 24" class="w-5 h-5 md:w-6 md:h-6" fill="currentColor"><path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 001.333 4.993L2 22l5.233-1.237a9.994 9.994 0 004.779 1.217h.004c5.505 0 9.988-4.478 9.989-9.984 0-2.669-1.037-5.176-2.922-7.062A9.935 9.935 0 0012.012 2zm5.72 14.156c-.242.684-1.408 1.309-1.95 1.428-.5.107-1.15.228-3.415-.71-2.906-1.205-4.757-4.237-4.898-4.426-.142-.19-1.168-1.554-1.168-2.966 0-1.412.736-2.113.999-2.398.263-.285.57-.356.76-.356.19 0 .38.001.545.009.176.009.412-.066.645.498.243.589.835 2.039.911 2.193.076.154.127.333.032.523-.095.19-.143.309-.285.475-.143.166-.3.356-.428.5-.143.143-.295.3-.133.58.161.279.718 1.188 1.543 1.923 1.066.95 1.956 1.242 2.242 1.385.285.143.45.119.617-.066.166-.185.712-.827.902-1.112.19-.285.38-.238.641-.143.261.095 1.647.778 1.932.92.285.142.475.214.546.333.071.119.071.685-.171 1.369z"/></svg>
                     </a>
-                    <button onclick="irAlRadarDesdeModal()" class="w-full text-gray-400 font-bold py-2 hover:text-white transition-colors text-sm">Ya pagué, ir al Radar 📡</button>
+                    <button onclick="irAlRadarDesdeModal()" class="w-full text-gray-400 font-bold py-1 md:py-2 hover:text-white transition-colors text-[11px] md:text-sm">Ya pagué, ir al Radar 📡</button>
                 `;
             }
 
             document.getElementById('modal-confirmacion').classList.remove('hidden');
             
-            // Limpiamos el carrito una vez generado el ticket visual
             carrito = [];
             actualizarCarritoVisual();
             toggleCart();
@@ -246,16 +246,16 @@ function actualizarCarritoVisual() {
         totalPizzas += item.cantidad;
         
         contenedorItems.innerHTML += `
-            <div class="flex justify-between items-center bg-gray-900/80 p-4 rounded-2xl border border-gray-800 mb-3">
+            <div class="flex justify-between items-center bg-gray-900/80 p-3 md:p-4 rounded-xl md:rounded-2xl border border-gray-800 mb-2 md:mb-3">
                 <div class="flex-grow pr-2">
-                    <p class="font-black text-sm italic text-white leading-tight mb-1">
+                    <p class="font-black text-xs md:text-sm italic text-white leading-tight mb-1">
                         <span class="text-yellow-400 mr-1">${item.cantidad}x</span>${item.nombre}
                     </p>
-                    <p class="text-green-400 font-bold text-xs">$${subtotal.toFixed(2)}</p>
+                    <p class="text-green-400 font-bold text-[10px] md:text-xs">$${subtotal.toFixed(2)}</p>
                 </div>
                 <div class="flex items-center gap-1 bg-black/50 rounded-lg p-1">
-                    <button onclick="cambiarCantidad(${index}, -1)" class="w-8 h-8 flex items-center justify-center bg-gray-800 text-white rounded-md font-bold hover:bg-red-500 transition-colors">-</button>
-                    <button onclick="cambiarCantidad(${index}, 1)" class="w-8 h-8 flex items-center justify-center bg-gray-800 text-white rounded-md font-bold hover:bg-green-500 transition-colors">+</button>
+                    <button onclick="cambiarCantidad(${index}, -1)" class="w-6 h-6 md:w-8 md:h-8 flex items-center justify-center bg-gray-800 text-white rounded-md font-bold hover:bg-red-500 transition-colors">-</button>
+                    <button onclick="cambiarCantidad(${index}, 1)" class="w-6 h-6 md:w-8 md:h-8 flex items-center justify-center bg-gray-800 text-white rounded-md font-bold hover:bg-green-500 transition-colors">+</button>
                 </div>
             </div>`;
     });
@@ -325,7 +325,7 @@ async function rastrearPedido() {
         if (!isNaN(input)) {
             input = `ASTRO-${input}`;
         } else {
-            return mostrarAlerta("¡Capitán! Ingresa solo el número de tu pedido o el código completo (Ej. ASTRO-12)");
+            return mostrarAlerta("¡Capitán! Ingresa solo el número o el código completo (Ej. ASTRO-12)");
         }
     }
 
@@ -343,7 +343,6 @@ async function rastrearPedido() {
         
         actualizarRadarUI(data.estado);
         
-        // 🚀 ACTUALIZAR EL BOTÓN SALVAVIDAS CON EL CÓDIGO ACTUAL 🚀
         const btnSoporte = document.getElementById('btn-soporte-radar');
         if (btnSoporte) {
             const msjAyuda = `Hola base espacial 🛸. Estoy rastreando mi misión ASTRO-${id} y necesito contactarme con ustedes.`;
@@ -370,6 +369,7 @@ function actualizarRadarUI(estado) {
     }
 
     const linea = document.getElementById('linea-progreso');
+    const lineaMobile = document.getElementById('linea-progreso-mobile');
     let nivel = 1;
 
     if (estado === 'pendiente') nivel = 1;
@@ -377,10 +377,10 @@ function actualizarRadarUI(estado) {
     if (estado === 'listo') nivel = 3;
     if (estado === 'finalizado') nivel = 4;
 
-    if(linea) {
-        const porcentajes = { 1: '0%', 2: '33%', 3: '66%', 4: '100%' };
-        linea.style.width = porcentajes[nivel];
-    }
+    const porcentajes = { 1: '0%', 2: '33%', 3: '66%', 4: '100%' };
+    
+    if(linea) linea.style.width = porcentajes[nivel];
+    if(lineaMobile) lineaMobile.style.height = porcentajes[nivel];
 
     for(let i=1; i<=nivel; i++) {
         const paso = document.getElementById(`paso-${i}`);
