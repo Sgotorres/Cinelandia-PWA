@@ -16,18 +16,15 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-    <div id="pantalla-login" class="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center z-[100] transition-opacity duration-500">
+    <div id="loader-inicial" class="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center z-[100] transition-opacity duration-500">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-11/12 max-w-md text-center">
-            <h1 class="text-3xl font-black text-red-600 mb-1 tracking-tighter">ADMIN PANEL</h1>
-            <p class="text-gray-500 mb-8 text-sm font-medium">Acceso exclusivo para el personal</p>
-            
-            <input type="password" id="input-pass" placeholder="Ingresa la contraseña" 
-                   class="w-full bg-gray-50 border-2 border-gray-100 text-center font-bold text-lg rounded-xl p-4 mb-4 focus:ring-2 focus:ring-red-500 outline-none transition-all">
-            
-            <button onclick="iniciarSesion()" class="w-full bg-red-600 text-white font-black py-4 rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200">
-                ENTRAR A COCINA
-            </button>
-            <p id="error-login" class="text-red-500 text-sm font-bold mt-4 hidden">Contraseña incorrecta</p>
+            <h1 class="text-3xl font-black text-red-600 mb-6 tracking-tighter">CINELANDIA CORE</h1>
+            <div class="flex justify-center items-center gap-3 mb-2">
+                <div class="w-4 h-4 bg-red-600 rounded-full animate-bounce"></div>
+                <div class="w-4 h-4 bg-red-600 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                <div class="w-4 h-4 bg-red-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+            </div>
+            <p id="loader-texto" class="text-gray-500 font-bold mt-4 animate-pulse">Autenticando sistema base...</p>
         </div>
     </div>
 
@@ -97,44 +94,81 @@
     <script src="http://localhost:3000/socket.io/socket.io.js"></script>
 
     <script>
-        // --- SISTEMA DE LOGIN BÁSICO ---
-        function iniciarSesion() {
-            const pass = document.getElementById('input-pass').value;
-            const claveSegura = "cinelandia2026"; // <-- ¡AQUÍ CAMBIAS LA CONTRASEÑA!
+        const API_BASE = 'http://localhost:3000';
+        // CLAVE DE SISTEMA M2M (Machine to Machine)
+        const SYSTEM_SECRET = "cinelandia2026"; 
 
-            if (pass === claveSegura) {
-                // Ocultar pantalla login y mostrar dashboard
-                const pantallaLogin = document.getElementById('pantalla-login');
-                pantallaLogin.style.opacity = '0';
-                setTimeout(() => {
-                    pantallaLogin.classList.add('hidden');
-                    document.getElementById('dashboard-principal').classList.remove('hidden');
-                    // Iniciar la carga de datos una vez dentro
-                    cargarPedidos();
-                }, 500);
-            } else {
-                document.getElementById('error-login').classList.remove('hidden');
+        // --- INYECCIÓN AUTOMÁTICA DE CABECERAS ---
+        function getAuthHeaders() {
+            const token = sessionStorage.getItem('adminToken');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        // --- AUTO-LOGIN SILENCIOSO (Llamado al iniciar la app) ---
+        async function autoLoginSilencioso() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: SYSTEM_SECRET })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    sessionStorage.setItem('adminToken', data.token); 
+                    
+                    // Quitar loader y mostrar dashboard
+                    const loader = document.getElementById('loader-inicial');
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.classList.add('hidden');
+                        document.getElementById('dashboard-principal').classList.remove('hidden');
+                        cargarPedidos(); // Carga inicial
+                    }, 500);
+                } else {
+                    document.getElementById('loader-texto').innerText = "❌ Clave de sistema rechazada. Revisa el backend.";
+                    document.getElementById('loader-texto').classList.remove('animate-pulse', 'text-gray-500');
+                    document.getElementById('loader-texto').classList.add('text-red-500');
+                }
+            } catch (error) {
+                console.warn("Backend no disponible. Reintentando...");
+                document.getElementById('loader-texto').innerText = "⏳ Conectando con los motores del backend...";
+                setTimeout(autoLoginSilencioso, 3000); // Polling: Si el backend está apagado, reintenta
             }
         }
 
-        // Permitir dar "Enter" para entrar
-        document.getElementById('input-pass').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') iniciarSesion();
-        });
+        // Disparar el login al cargar la ventana
+        window.addEventListener('DOMContentLoaded', autoLoginSilencioso);
+
+        // --- GESTIÓN DE EXPIRACIÓN DEL TOKEN ---
+        async function fetchSeguro(url, options = {}) {
+            options.headers = getAuthHeaders();
+            let res = await fetch(url, options);
+            
+            // Si el token expira o es inválido, auto-renovar sin interrumpir al admin
+            if (res.status === 401 || res.status === 403) {
+                console.log("Token expirado. Auto-renovando sesión...");
+                await autoLoginSilencioso();
+                options.headers = getAuthHeaders(); // Actualizar cabeceras con el nuevo token
+                res = await fetch(url, options);    // Reintentar la petición original
+            }
+            return res;
+        }
 
         // --- CONEXIÓN EN TIEMPO REAL (SOCKET.IO) ---
-        const socket = io('http://localhost:3000');
+        const socket = io(API_BASE);
 
         function reproducirCampana() {
             const audio = new Audio('https://actions.google.com/sounds/v1/alarms/dinner_bell_triangle.ogg');
-            audio.play().catch(e => console.log("El navegador bloqueó el audio hasta el primer clic."));
+            audio.play().catch(e => console.log("Audio bloqueado temporalmente."));
         }
 
         socket.on('nuevo_pedido_recibido', () => {
             reproducirCampana();
-            cargarPedidos(); // Recargamos la tabla al instante
-            
-            // Efecto visual de salto en el título
+            cargarPedidos(); 
             const titulo = document.getElementById('titulo-pedidos');
             titulo.classList.add('text-red-500', 'animate-bounce');
             setTimeout(() => titulo.classList.remove('text-red-500', 'animate-bounce'), 3000);
@@ -156,8 +190,17 @@
         // --- GESTIÓN DE PEDIDOS ---
         async function cargarPedidos() {
             try {
-                const res = await fetch('http://localhost:3000/admin/pedidos');
+                const res = await fetchSeguro(`${API_BASE}/admin/pedidos`);
                 const pedidos = await res.json();
+
+                // NUEVO: Validación de tipo de dato
+                if (!Array.isArray(pedidos)) {
+                    console.error("Error del servidor:", pedidos);
+                    document.getElementById('grid-pedidos').innerHTML = `<div class="col-span-full text-center py-20 text-red-500 font-bold">Error interno: No se pudo procesar la lista de pedidos.</div>`;
+                    return;
+                }
+                
+                // ... el resto del código sigue igual
                 const grid = document.getElementById('grid-pedidos');
 
                 if (pedidos.length === 0) {
@@ -202,9 +245,8 @@
 
         async function actualizarEstado(id, nuevoEstado) {
             try {
-                const res = await fetch(`http://localhost:3000/pedidos/${id}`, {
+                const res = await fetchSeguro(`${API_BASE}/pedidos/${id}`, {
                     method: 'PATCH',
-                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({estado: nuevoEstado})
                 });
                 if (res.ok) cargarPedidos();
@@ -223,8 +265,8 @@
         // --- GESTIÓN DE INVENTARIO ---
         async function cargarInventario() {
             try {
-                // Importante: mandamos admin=true para ver incluso lo agotado
-                const res = await fetch('http://localhost:3000/menu?admin=true');
+                // Menú es ruta pública, no necesita token, usamos fetch normal
+                const res = await fetch(`${API_BASE}/menu?admin=true`);
                 const productos = await res.json();
                 const tbody = document.getElementById('tabla-inventario');
                 
@@ -254,35 +296,29 @@
         }
 
         async function toggleRecomendado(id, estadoActual) {
-            const nuevoEstado = !estadoActual;
             try {
-                await fetch(`http://localhost:3000/productos/${id}`, {
+                await fetchSeguro(`${API_BASE}/productos/${id}`, {
                     method: 'PATCH',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ es_recomendado: nuevoEstado })
+                    body: JSON.stringify({ es_recomendado: !estadoActual })
                 });
                 cargarInventario();
             } catch (e) { alert("Error al actualizar"); }
         }
 
         async function toggleDisponibilidad(id, estadoActual) {
-            const nuevoEstado = estadoActual !== false ? false : true;
             try {
-                await fetch(`http://localhost:3000/productos/${id}`, {
+                await fetchSeguro(`${API_BASE}/productos/${id}`, {
                     method: 'PATCH',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ disponible: nuevoEstado })
+                    body: JSON.stringify({ disponible: !estadoActual })
                 });
                 cargarInventario(); 
-            } catch (e) { 
-                alert("Error al actualizar el estado del producto"); 
-            }
+            } catch (e) { alert("Error al actualizar"); }
         }
 
         // --- GESTIÓN DE ESTADÍSTICAS ---
         async function cargarStats() {
             try {
-                const res = await fetch('http://localhost:3000/admin/stats-hoy');
+                const res = await fetchSeguro(`${API_BASE}/admin/stats-hoy`);
                 const stats = await res.json();
                 const container = document.getElementById('stats-container');
                 

@@ -4,7 +4,7 @@ const cors = require('cors');
 const http = require('http'); 
 const { Server } = require('socket.io'); 
 const path = require('path');
-const estadoTienda = require('./src/middlewares/estadoTienda');
+const pool = require('./db'); // <-- AQUÍ IMPORTAMOS LA BASE DE DATOS
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,17 +19,29 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 io.on('connection', (socket) => {
-    console.log('🟢 Administrador conectado al sistema');
-    socket.on('disconnect', () => console.log('🔴 Administrador desconectado'));
+    console.log('🟢 Cliente/Admin conectado al sistema');
+    // Buena práctica: unirse a un room si es admin (lo implementaremos a fondo luego)
+    socket.join('admin-room'); 
+    socket.on('disconnect', () => console.log('🔴 Cliente/Admin desconectado'));
 });
 
 app.use('/', require('./src/routes/menu.routes'));
 app.use('/', require('./src/routes/pedidos.routes')); 
 app.use('/', require('./src/routes/admin.routes')); 
 
-app.get('/api/estado', (req, res) => {
-    const abierto = estadoTienda.estaAbierta();
-    res.json({ abierto, mensaje: abierto ? "¡Estamos tomando pedidos!" : "Cinelandia se encuentra cerrado." });
+// AHORA LEEMOS EL ESTADO DIRECTO DE POSTGRESQL
+app.get('/api/estado', async (req, res) => {
+    try {
+        const result = await pool.query("SELECT valor FROM configuracion_sistema WHERE clave = 'estado_tienda'");
+        
+        // Extraemos el valor JSON. Si por alguna razón no existe, por defecto es falso (cerrado)
+        const abierto = result.rows.length > 0 ? result.rows[0].valor.abierta : false;
+        
+        res.json({ abierto, mensaje: abierto ? "¡Estamos tomando pedidos!" : "Cinelandia se encuentra cerrado." });
+    } catch (err) {
+        console.error("Error al consultar estado de la tienda:", err);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
 });
 
 server.listen(PORT, () => {

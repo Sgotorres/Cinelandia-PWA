@@ -1,9 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../../db');
-const estadoTienda = require('../middlewares/estadoTienda');
+const pool = require('../../db'); // Importamos la DB
+const verificarAdmin = require('../middlewares/auth.middleware'); // Importamos el middleware de la Fase 2
+const jwt = require('jsonwebtoken');
 
-router.get('/admin/pedidos', async (req, res) => {
+// 1. RUTA DE LOGIN (Pública: para que el admin pueda entrar)
+router.post('/admin/login', (req, res) => {
+    const { password } = req.body;
+    
+    // Por ahora validamos así, en un futuro usaremos contraseñas encriptadas en la BD
+    if (password === (process.env.ADMIN_PASSWORD || 'cinelandia2026')) {
+        const token = jwt.sign({ rol: 'admin' }, process.env.JWT_SECRET || 'supersecreto123', { expiresIn: '8h' });
+        res.json({ token });
+    } else {
+        res.status(401).json({ error: "Credenciales inválidas" });
+    }
+});
+
+// 2. RUTAS PROTEGIDAS (Solo accesibles con el Token JWT)
+router.get('/admin/pedidos', verificarAdmin, async (req, res) => {
     try {
         const query = `
             SELECT p.id, p.mesa, p.total, p.estado, p.fecha,
@@ -16,7 +31,7 @@ router.get('/admin/pedidos', async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Error al obtener pedidos" }); }
 });
 
-router.get('/admin/stats-hoy', async (req, res) => {
+router.get('/admin/stats-hoy', verificarAdmin, async (req, res) => {
     try {
         const query = `
             SELECT COUNT(*) as total_pedidos, COALESCE(SUM(total), 0) as ingresos_totales,
@@ -29,7 +44,7 @@ router.get('/admin/stats-hoy', async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Error en estadísticas" }); }
 });
 
-router.patch('/pedidos/:id', async (req, res) => {
+router.patch('/pedidos/:id', verificarAdmin, async (req, res) => {
     const { id } = req.params;
     const { estado } = req.body;
     try {
@@ -38,16 +53,31 @@ router.patch('/pedidos/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Error al actualizar' }); }
 });
 
-router.post('/api/admin/estado', (req, res) => {
+// 3. ACTUALIZAR ESTADO DE LA TIENDA EN POSTGRESQL
+router.post('/api/admin/estado', verificarAdmin, async (req, res) => {
     const { abierto } = req.body;
-    if (typeof abierto === 'boolean') {
-        estadoTienda.setEstado(abierto);
-        console.log(`[SISTEMA] El administrador ha ${abierto ? 'ABIERTO' : 'CERRADO'} Cinelandia.`);
+    
+    if (typeof abierto !== 'boolean') {
+        return res.status(400).json({ exito: false, error: 'Formato inválido. Debe ser true o false.' });
+    }
+
+    try {
+        // Actualizamos el JSONB en la base de datos
+        await pool.query(
+            "UPDATE configuracion_sistema SET valor = $1 WHERE clave = 'estado_tienda'",
+            [JSON.stringify({ abierta: abierto })]
+        );
+
+        console.log(`[SISTEMA DB] El administrador ha ${abierto ? 'ABIERTO' : 'CERRADO'} Cinelandia.`);
+        
+        // Notificamos a los clientes en tiempo real
         const io = req.app.get('io');
         io.emit('cambio_estado_tienda', { abierto });
+        
         res.json({ exito: true, estadoActual: abierto });
-    } else {
-        res.status(400).json({ exito: false, error: 'Formato inválido' });
+    } catch (err) {
+        console.error("Error guardando el estado en DB:", err);
+        res.status(500).json({ error: "Error al cambiar el estado de la tienda" });
     }
 });
 

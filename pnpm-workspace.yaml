@@ -2,4 +2,5 @@ packages:
   - 'backend'
   - 'admin-desktop'
 allowBuilds:
+  bcrypt: set this to true or false
   electron: true
