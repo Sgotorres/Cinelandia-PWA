@@ -96,13 +96,26 @@
 
     <script src="http://localhost:3000/socket.io/socket.io.js"></script>
 
-    <script>
-        // --- SISTEMA DE LOGIN BÁSICO ---
-        function iniciarSesion() {
-            const pass = document.getElementById('input-pass').value;
-            const claveSegura = "cinelandia2026"; // <-- ¡AQUÍ CAMBIAS LA CONTRASEÑA!
+<script>
+    // Variable global para guardar el token de seguridad
+    let tokenAdmin = "";
 
-            if (pass === claveSegura) {
+    // --- SISTEMA DE LOGIN SEGURO (CON JWT) ---
+    async function iniciarSesion() {
+        const pass = document.getElementById('input-pass').value;
+        
+        try {
+            // Petición al backend real para validar la contraseña
+            const res = await fetch('http://localhost:3000/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pass })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                tokenAdmin = data.token; // Guardamos el token recibido
+
                 // Ocultar pantalla login y mostrar dashboard
                 const pantallaLogin = document.getElementById('pantalla-login');
                 pantallaLogin.style.opacity = '0';
@@ -115,193 +128,221 @@
             } else {
                 document.getElementById('error-login').classList.remove('hidden');
             }
+        } catch (e) {
+            console.error("Error al iniciar sesión", e);
+            document.getElementById('error-login').innerText = "Error de conexión con el servidor";
+            document.getElementById('error-login').classList.remove('hidden');
         }
+    }
 
-        // Permitir dar "Enter" para entrar
-        document.getElementById('input-pass').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') iniciarSesion();
-        });
+    // Permitir dar "Enter" para entrar
+    document.getElementById('input-pass').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') iniciarSesion();
+    });
 
-        // --- CONEXIÓN EN TIEMPO REAL (SOCKET.IO) ---
-        const socket = io('http://localhost:3000');
+    // --- CONEXIÓN EN TIEMPO REAL (SOCKET.IO) ---
+    const socket = io('http://localhost:3000');
 
-        function reproducirCampana() {
-            const audio = new Audio('https://actions.google.com/sounds/v1/alarms/dinner_bell_triangle.ogg');
-            audio.play().catch(e => console.log("El navegador bloqueó el audio hasta el primer clic."));
-        }
+    function reproducirCampana() {
+        const audio = new Audio('https://actions.google.com/sounds/v1/alarms/dinner_bell_triangle.ogg');
+        audio.play().catch(e => console.log("El navegador bloqueó el audio hasta el primer clic."));
+    }
 
-        socket.on('nuevo_pedido_recibido', () => {
-            reproducirCampana();
-            cargarPedidos(); // Recargamos la tabla al instante
+    socket.on('nuevo_pedido_recibido', () => {
+        reproducirCampana();
+        cargarPedidos(); // Recargamos la tabla al instante
+        
+        // Efecto visual de salto en el título
+        const titulo = document.getElementById('titulo-pedidos');
+        titulo.classList.add('text-red-500', 'animate-bounce');
+        setTimeout(() => titulo.classList.remove('text-red-500', 'animate-bounce'), 3000);
+    });
+
+    // --- LÓGICA DE NAVEGACIÓN ---
+    function verTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(section => section.classList.add('hidden'));
+        document.getElementById(tabId).classList.remove('hidden');
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        if (tabId === 'tab-pedidos') cargarPedidos();
+        if (tabId === 'tab-inventario') cargarInventario();
+        if (tabId === 'tab-historial') cargarStats();
+    }
+
+    // --- GESTIÓN DE PEDIDOS ---
+    async function cargarPedidos() {
+        if (!tokenAdmin) return; // Si no hay token, no intenta cargar
+
+        try {
+            const res = await fetch('http://localhost:3000/admin/pedidos', {
+                headers: { 'Authorization': `Bearer ${tokenAdmin}` } // <-- TOKEN ENVIADO
+            });
             
-            // Efecto visual de salto en el título
-            const titulo = document.getElementById('titulo-pedidos');
-            titulo.classList.add('text-red-500', 'animate-bounce');
-            setTimeout(() => titulo.classList.remove('text-red-500', 'animate-bounce'), 3000);
-        });
+            if (!res.ok) throw new Error("Acceso denegado o sesión expirada");
 
-        // --- LÓGICA DE NAVEGACIÓN ---
-        function verTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(section => section.classList.add('hidden'));
-            document.getElementById(tabId).classList.remove('hidden');
-            
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            const pedidos = await res.json();
+            const grid = document.getElementById('grid-pedidos');
 
-            if (tabId === 'tab-pedidos') cargarPedidos();
-            if (tabId === 'tab-inventario') cargarInventario();
-            if (tabId === 'tab-historial') cargarStats();
-        }
+            if (pedidos.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-400">No hay pedidos pendientes por ahora.</div>`;
+                return;
+            }
 
-        // --- GESTIÓN DE PEDIDOS ---
-        async function cargarPedidos() {
-            try {
-                const res = await fetch('http://localhost:3000/admin/pedidos');
-                const pedidos = await res.json();
-                const grid = document.getElementById('grid-pedidos');
-
-                if (pedidos.length === 0) {
-                    grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-400">No hay pedidos pendientes por ahora.</div>`;
-                    return;
-                }
-
-                grid.innerHTML = pedidos.map(p => `
-                    <div class="bg-white rounded-2xl shadow-sm border-t-4 ${getEstadoColor(p.estado)} p-6 transition-all hover:shadow-md">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Mesa ${p.mesa}</span>
-                                <h3 class="text-lg font-black text-gray-800">Pedido #${p.id}</h3>
-                                <p class="text-xs text-gray-400">${new Date(p.fecha).toLocaleTimeString()}</p>
+            grid.innerHTML = pedidos.map(p => `
+                <div class="bg-white rounded-2xl shadow-sm border-t-4 ${getEstadoColor(p.estado)} p-6 transition-all hover:shadow-md">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Mesa ${p.mesa}</span>
+                            <h3 class="text-lg font-black text-gray-800">Pedido #${p.id}</h3>
+                            <p class="text-xs text-gray-400">${new Date(p.fecha).toLocaleTimeString()}</p>
+                        </div>
+                        <span class="bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-1 rounded-md uppercase">${p.estado}</span>
+                    </div>
+                    
+                    <div class="space-y-3 mb-6">
+                        ${p.items.map(item => `
+                            <div class="flex justify-between text-sm border-b border-gray-50 pb-2">
+                                <span class="text-gray-600"><span class="font-bold text-red-600">${item.cantidad}x</span> ${item.nombre}</span>
                             </div>
-                            <span class="bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-1 rounded-md uppercase">${p.estado}</span>
-                        </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        <select onchange="actualizarEstado(${p.id}, this.value)" 
+                                class="w-full bg-gray-50 border-none text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-red-500 transition cursor-pointer">
+                            <option value="pendiente" ${p.estado === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
+                            <option value="cocinando" ${p.estado === 'cocinando' ? 'selected' : ''}>👨‍🍳 Cocinando</option>
+                            <option value="listo" ${p.estado === 'listo' ? 'selected' : ''}>✅ Listo</option>
+                            <option value="finalizado" ${p.estado === 'finalizado' ? 'selected' : ''}>🏁 Finalizado</option>
+                        </select>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error("Error al cargar pedidos:", error);
+            if (error.message.includes("denegado")) alert("Sesión expirada. Por favor, recarga la página.");
+        }
+    }
+
+    async function actualizarEstado(id, nuevoEstado) {
+        try {
+            const res = await fetch(`http://localhost:3000/pedidos/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${tokenAdmin}` // <-- TOKEN ENVIADO
+                },
+                body: JSON.stringify({estado: nuevoEstado})
+            });
+            if (res.ok) cargarPedidos();
+        } catch (e) { alert("Error al actualizar estado"); }
+    }
+
+    function getEstadoColor(estado) {
+        switch(estado) {
+            case 'pendiente': return 'border-yellow-400';
+            case 'cocinando': return 'border-orange-500';
+            case 'listo': return 'border-green-500';
+            default: return 'border-gray-200';
+        }
+    }
+
+    // --- GESTIÓN DE INVENTARIO ---
+    async function cargarInventario() {
+        try {
+            // Esta ruta suele ser pública, pero le pasamos el token por si acaso el backend lo requiere para 'admin=true'
+            const res = await fetch('http://localhost:3000/menu?admin=true', {
+                headers: { 'Authorization': `Bearer ${tokenAdmin}` } 
+            });
+            const productos = await res.json();
+            const tbody = document.getElementById('tabla-inventario');
+            
+            tbody.innerHTML = productos.map(p => `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-gray-800">${p.nombre}</div>
+                        <div class="text-xs text-gray-400">$${parseFloat(p.precio).toFixed(2)}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600 uppercase">${p.categoria}</span>
+                    </td>
+                    <td class="px-6 py-4 text-center flex justify-center gap-2">
+                        <button onclick="toggleRecomendado(${p.id}, ${p.es_recomendado})" 
+                                class="text-xs font-bold px-4 py-2 rounded-full transition-all ${p.es_recomendado ? 'bg-yellow-100 text-yellow-700 border border-yellow-200 hover:bg-yellow-200' : 'bg-gray-100 text-gray-400 border border-transparent hover:bg-gray-200'}">
+                            ${p.es_recomendado ? '⭐ RECOMENDADO' : 'MARCAR'}
+                        </button>
                         
-                        <div class="space-y-3 mb-6">
-                            ${p.items.map(item => `
-                                <div class="flex justify-between text-sm border-b border-gray-50 pb-2">
-                                    <span class="text-gray-600"><span class="font-bold text-red-600">${item.cantidad}x</span> ${item.nombre}</span>
-                                </div>
-                            `).join('')}
-                        </div>
+                        <button onclick="toggleDisponibilidad(${p.id}, ${p.disponible})" 
+                                class="text-xs font-bold px-4 py-2 rounded-full transition-all ${p.disponible !== false ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200' : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'}">
+                            ${p.disponible !== false ? '✅ DISPONIBLE' : '❌ AGOTADO'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) { console.error("Error en inventario", e); }
+    }
 
-                        <div class="flex flex-col gap-3">
-                            <select onchange="actualizarEstado(${p.id}, this.value)" 
-                                    class="w-full bg-gray-50 border-none text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-red-500 transition cursor-pointer">
-                                <option value="pendiente" ${p.estado === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
-                                <option value="cocinando" ${p.estado === 'cocinando' ? 'selected' : ''}>👨‍🍳 Cocinando</option>
-                                <option value="listo" ${p.estado === 'listo' ? 'selected' : ''}>✅ Listo</option>
-                                <option value="finalizado" ${p.estado === 'finalizado' ? 'selected' : ''}>🏁 Finalizado</option>
-                            </select>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error("Error al cargar pedidos:", error);
-            }
-        }
+    async function toggleRecomendado(id, estadoActual) {
+        const nuevoEstado = !estadoActual;
+        try {
+            await fetch(`http://localhost:3000/productos/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${tokenAdmin}` // <-- TOKEN ENVIADO
+                },
+                body: JSON.stringify({ es_recomendado: nuevoEstado })
+            });
+            cargarInventario();
+        } catch (e) { alert("Error al actualizar"); }
+    }
 
-        async function actualizarEstado(id, nuevoEstado) {
-            try {
-                const res = await fetch(`http://localhost:3000/pedidos/${id}`, {
-                    method: 'PATCH',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({estado: nuevoEstado})
-                });
-                if (res.ok) cargarPedidos();
-            } catch (e) { alert("Error al actualizar estado"); }
+    async function toggleDisponibilidad(id, estadoActual) {
+        const nuevoEstado = estadoActual !== false ? false : true;
+        try {
+            await fetch(`http://localhost:3000/productos/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${tokenAdmin}` // <-- TOKEN ENVIADO
+                },
+                body: JSON.stringify({ disponible: nuevoEstado })
+            });
+            cargarInventario(); 
+        } catch (e) { 
+            alert("Error al actualizar el estado del producto"); 
         }
+    }
 
-        function getEstadoColor(estado) {
-            switch(estado) {
-                case 'pendiente': return 'border-yellow-400';
-                case 'cocinando': return 'border-orange-500';
-                case 'listo': return 'border-green-500';
-                default: return 'border-gray-200';
-            }
-        }
+    // --- GESTIÓN DE ESTADÍSTICAS ---
+    async function cargarStats() {
+        if (!tokenAdmin) return;
 
-        // --- GESTIÓN DE INVENTARIO ---
-        async function cargarInventario() {
-            try {
-                // Importante: mandamos admin=true para ver incluso lo agotado
-                const res = await fetch('http://localhost:3000/menu?admin=true');
-                const productos = await res.json();
-                const tbody = document.getElementById('tabla-inventario');
-                
-                tbody.innerHTML = productos.map(p => `
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4">
-                            <div class="font-bold text-gray-800">${p.nombre}</div>
-                            <div class="text-xs text-gray-400">$${parseFloat(p.precio).toFixed(2)}</div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <span class="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600 uppercase">${p.categoria}</span>
-                        </td>
-                        <td class="px-6 py-4 text-center flex justify-center gap-2">
-                            <button onclick="toggleRecomendado(${p.id}, ${p.es_recomendado})" 
-                                    class="text-xs font-bold px-4 py-2 rounded-full transition-all ${p.es_recomendado ? 'bg-yellow-100 text-yellow-700 border border-yellow-200 hover:bg-yellow-200' : 'bg-gray-100 text-gray-400 border border-transparent hover:bg-gray-200'}">
-                                ${p.es_recomendado ? '⭐ RECOMENDADO' : 'MARCAR'}
-                            </button>
-                            
-                            <button onclick="toggleDisponibilidad(${p.id}, ${p.disponible})" 
-                                    class="text-xs font-bold px-4 py-2 rounded-full transition-all ${p.disponible !== false ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200' : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'}">
-                                ${p.disponible !== false ? '✅ DISPONIBLE' : '❌ AGOTADO'}
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (e) { console.error("Error en inventario", e); }
-        }
-
-        async function toggleRecomendado(id, estadoActual) {
-            const nuevoEstado = !estadoActual;
-            try {
-                await fetch(`http://localhost:3000/productos/${id}`, {
-                    method: 'PATCH',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ es_recomendado: nuevoEstado })
-                });
-                cargarInventario();
-            } catch (e) { alert("Error al actualizar"); }
-        }
-
-        async function toggleDisponibilidad(id, estadoActual) {
-            const nuevoEstado = estadoActual !== false ? false : true;
-            try {
-                await fetch(`http://localhost:3000/productos/${id}`, {
-                    method: 'PATCH',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ disponible: nuevoEstado })
-                });
-                cargarInventario(); 
-            } catch (e) { 
-                alert("Error al actualizar el estado del producto"); 
-            }
-        }
-
-        // --- GESTIÓN DE ESTADÍSTICAS ---
-        async function cargarStats() {
-            try {
-                const res = await fetch('http://localhost:3000/admin/stats-hoy');
-                const stats = await res.json();
-                const container = document.getElementById('stats-container');
-                
-                container.innerHTML = `
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Ingresos de Hoy</p>
-                        <p class="text-3xl font-black text-gray-900">$${parseFloat(stats.ingresos_totales).toFixed(2)}</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-blue-500">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Pedidos Totales</p>
-                        <p class="text-3xl font-black text-gray-900">${stats.total_pedidos}</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-red-500">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Más Vendido</p>
-                        <p class="text-xl font-black text-gray-900">${stats.top_producto || 'Sin ventas'}</p>
-                    </div>
-                `;
-            } catch (e) { console.error("Error en stats", e); }
-        }
-    </script>
+        try {
+            const res = await fetch('http://localhost:3000/admin/stats-hoy', {
+                headers: { 'Authorization': `Bearer ${tokenAdmin}` } // <-- TOKEN ENVIADO
+            });
+            const stats = await res.json();
+            const container = document.getElementById('stats-container');
+            
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Ingresos de Hoy</p>
+                    <p class="text-3xl font-black text-gray-900">$${parseFloat(stats.ingresos_totales).toFixed(2)}</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-blue-500">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Pedidos Totales</p>
+                    <p class="text-3xl font-black text-gray-900">${stats.total_pedidos}</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-red-500">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Más Vendido</p>
+                    <p class="text-xl font-black text-gray-900">${stats.top_producto || 'Sin ventas'}</p>
+                </div>
+            `;
+        } catch (e) { console.error("Error en stats", e); }
+    }
+</script>
 </body>
 </html>
