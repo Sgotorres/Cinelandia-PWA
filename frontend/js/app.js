@@ -37,16 +37,16 @@ function setTipoEntrega(tipo) {
     
     if (tipo === 'Delivery') {
         btnDelivery.className = "flex-1 flex items-center justify-center gap-1 md:gap-1.5 bg-yellow-400 text-black font-black py-2.5 md:py-3 rounded-lg md:rounded-xl text-[10px] md:text-xs transition-all shadow-[0_0_15px_rgba(250,204,21,0.2)]";
-        btnDelivery.innerHTML = '<img src="delivery.png" alt="Delivery" class="h-3.5 md:h-4 w-auto drop-shadow-sm"> DELIVERY';
+        btnDelivery.innerHTML = '<img src="assets/delivery.png" alt="Delivery" class="h-3.5 md:h-4 w-auto drop-shadow-sm"> DELIVERY';
         
         btnRetiro.className = "flex-1 flex items-center justify-center gap-1 md:gap-1.5 text-gray-400 font-bold py-2.5 md:py-3 rounded-lg md:rounded-xl text-[10px] md:text-xs transition-all hover:text-white";
-        btnRetiro.innerHTML = '<img src="buzzcorriendo.png" alt="Retiro" class="h-3.5 md:h-4 w-auto drop-shadow-sm opacity-50"> RETIRO';
+        btnRetiro.innerHTML = '<img src="assets/buzzcorriendo.png" alt="Retiro" class="h-3.5 md:h-4 w-auto drop-shadow-sm opacity-50"> RETIRO';
     } else {
         btnRetiro.className = "flex-1 flex items-center justify-center gap-1 md:gap-1.5 bg-yellow-400 text-black font-black py-2.5 md:py-3 rounded-lg md:rounded-xl text-[10px] md:text-xs transition-all shadow-[0_0_15px_rgba(250,204,21,0.2)]";
-        btnRetiro.innerHTML = '<img src="buzzcorriendo.png" alt="Retiro" class="h-3.5 md:h-4 w-auto drop-shadow-sm"> RETIRO';
+        btnRetiro.innerHTML = '<img src="assets/buzzcorriendo.png" alt="Retiro" class="h-3.5 md:h-4 w-auto drop-shadow-sm"> RETIRO';
         
         btnDelivery.className = "flex-1 flex items-center justify-center gap-1 md:gap-1.5 text-gray-400 font-bold py-2.5 md:py-3 rounded-lg md:rounded-xl text-[10px] md:text-xs transition-all hover:text-white";
-        btnDelivery.innerHTML = '<img src="delivery.png" alt="Delivery" class="h-3.5 md:h-4 w-auto drop-shadow-sm opacity-50"> DELIVERY';
+        btnDelivery.innerHTML = '<img src="assets/delivery.png" alt="Delivery" class="h-3.5 md:h-4 w-auto drop-shadow-sm opacity-50"> DELIVERY';
     }
 }
 

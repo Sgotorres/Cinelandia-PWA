@@ -4,8 +4,8 @@ const CACHE_NAME = 'cinelandia-pwa-v1';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './style.css',
-    './app.js',
+    './css/style.css',   // <-- Corregido
+    './js/app.js',       // <-- Corregido
     './manifest.json',
     'https://unpkg.com/@tailwindcss/browser@4'
 ];
