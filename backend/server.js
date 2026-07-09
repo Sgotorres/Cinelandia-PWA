@@ -44,7 +44,8 @@ app.get('/api/estado', async (req, res) => {
     }
 });
 
-server.listen(PORT, () => {
-    console.log(`✅ Servidor Cinelandia activo en puerto ${PORT}`);
-    console.log(`🚀 Arquitectura Modular Iniciada y funcionando`);
+// Al agregar '0.0.0.0', permitimos conexiones desde otras máquinas en la misma red Wi-Fi
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor corriendo en el puerto ${PORT}`);
+    console.log(`Para conectarte desde la tablet u otro equipo, usa tu IP Local.`);
 });

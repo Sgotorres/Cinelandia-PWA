@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cinelandia - Panel de Mesero</title>
+    <!-- Mismo CDN de Tailwind que usas en el admin -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Desactiva la selección de texto para que parezca una app nativa */
+        body {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* Animación suave para cuando el mesero presiona una mesa */
+        .mesa-card {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .mesa-card:active {
+            transform: scale(0.96);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Ocultar barra de desplazamiento para pantallas táctiles */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden text-gray-800">
+
+    <!-- Navbar Superior (Estilo consistente con el admin) -->
+    <header class="bg-white shadow-sm z-10 p-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <!-- Asumo que tienes el logo en assets, si no, puedes cambiar la ruta -->
+            <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                C
+            </div>
+            <h1 class="text-xl font-semibold text-gray-800 tracking-tight">Sala Principal</h1>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="flex flex-col text-right">
+                <span class="text-sm font-medium text-gray-600">Angel Torres</span>
+                <span class="text-xs text-green-500 font-semibold"><i class="fas fa-circle text-[8px] mr-1"></i>En turno</span>
+            </div>
+            <button class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors">
+                <i class="fas fa-bell"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Contenido Principal: Grid de Mesas -->
+    <main class="flex-1 overflow-y-auto p-6 bg-slate-50">
+        
+        <!-- Filtros Rápidos -->
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-medium text-gray-700">Estado de Mesas</h2>
+            <div class="flex gap-2">
+                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Libres: 4</span>
+                <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">Ocupadas: 2</span>
+                <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">Espera: 2</span>
+            </div>
+        </div>
+
+        <!-- Cuadrícula de Mesas (Ajustada para Tablet) -->
+        <!-- Se adapta a 3 columnas en vertical, 4 o más en horizontal -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pb-20" id="contenedor-mesas">
+            
+            <!-- Ejemplo de Mesa Libre -->
+            <div class="mesa-card bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm cursor-pointer relative" onclick="abrirMesa(1, 'Mesa 1', 'libre')">
+                <div class="h-2 w-full bg-green-500"></div>
+                <div class="p-5 flex flex-col items-center justify-center">
+                    <i class="fas fa-utensils text-3xl text-gray-300 mb-3"></i>
+                    <h3 class="text-xl font-bold text-gray-800">Mesa 1</h3>
+                    <p class="text-sm text-green-600 mt-1 font-medium">Disponible</p>
+                </div>
+            </div>
+
+            <!-- Ejemplo de Mesa Ocupada -->
+            <div class="mesa-card bg-white rounded-xl border border-red-200 overflow-hidden shadow-sm cursor-pointer relative" onclick="abrirMesa(2, 'Mesa 2', 'ocupada')">
+                <div class="h-2 w-full bg-red-500"></div>
+                <div class="p-5 flex flex-col items-center justify-center">
+                    <!-- Icono indicando personas -->
+                    <div class="flex gap-1 mb-3 text-red-400">
+                        <i class="fas fa-user"></i>
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">Mesa 2</h3>
+                    <p class="text-sm text-red-600 mt-1 font-medium">Consumiendo</p>
+                </div>
+                <div class="absolute top-3 right-3 text-xs font-bold text-gray-400">
+                    45m
+                </div>
+            </div>
+
+            <!-- Ejemplo de Mesa Esperando Pedido -->
+            <div class="mesa-card bg-white rounded-xl border border-yellow-300 overflow-hidden shadow-sm cursor-pointer relative" onclick="abrirMesa(3, 'Mesa 3', 'esperando')">
+                <div class="h-2 w-full bg-yellow-400"></div>
+                <!-- Animación de pulso para llamar la atención -->
+                <div class="absolute top-2 right-2 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
+                <div class="absolute top-2 right-2 w-3 h-3 bg-yellow-500 rounded-full"></div>
+                
+                <div class="p-5 flex flex-col items-center justify-center">
+                    <i class="fas fa-bell-concierge text-3xl text-yellow-500 mb-3"></i>
+                    <h3 class="text-xl font-bold text-gray-800">Mesa 3</h3>
+                    <p class="text-sm text-yellow-600 mt-1 font-medium">Por Atender</p>
+                </div>
+            </div>
+
+             <!-- Más mesas simuladas -->
+             <div class="mesa-card bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm cursor-pointer" onclick="abrirMesa(4, 'Mesa 4', 'libre')">
+                <div class="h-2 w-full bg-green-500"></div>
+                <div class="p-5 flex flex-col items-center justify-center">
+                    <i class="fas fa-utensils text-3xl text-gray-300 mb-3"></i>
+                    <h3 class="text-xl font-bold text-gray-800">Mesa 4</h3>
+                    <p class="text-sm text-green-600 mt-1 font-medium">Disponible</p>
+                </div>
+            </div>
+
+             <div class="mesa-card bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm cursor-pointer" onclick="abrirMesa(5, 'Mesa 5', 'libre')">
+                <div class="h-2 w-full bg-green-500"></div>
+                <div class="p-5 flex flex-col items-center justify-center">
+                    <i class="fas fa-utensils text-3xl text-gray-300 mb-3"></i>
+                    <h3 class="text-xl font-bold text-gray-800">Mesa 5</h3>
+                    <p class="text-sm text-green-600 mt-1 font-medium">Disponible</p>
+                </div>
+            </div>
+
+            <div class="mesa-card bg-white rounded-xl border border-red-200 overflow-hidden shadow-sm cursor-pointer relative" onclick="abrirMesa(6, 'Mesa 6', 'ocupada')">
+                <div class="h-2 w-full bg-red-500"></div>
+                <div class="p-5 flex flex-col items-center justify-center">
+                    <div class="flex gap-1 mb-3 text-red-400">
+                        <i class="fas fa-user"></i>
+                        <i class="fas fa-user"></i>
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">Mesa 6</h3>
+                    <p class="text-sm text-red-600 mt-1 font-medium">Consumiendo</p>
+                </div>
+                <div class="absolute top-3 right-3 text-xs font-bold text-gray-400">
+                    12m
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Barra de Navegación Inferior (Estilo App Móvil) -->
+    <nav class="bg-white border-t border-gray-200 flex justify-around items-center p-3 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-20">
+        <button class="flex flex-col items-center text-indigo-600">
+            <i class="fas fa-chair text-xl mb-1"></i>
+            <span class="text-[10px] font-medium">Mesas</span>
+        </button>
+        <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors">
+            <i class="fas fa-receipt text-xl mb-1"></i>
+            <span class="text-[10px] font-medium">Comandas</span>
+        </button>
+        <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors relative">
+            <i class="fas fa-fire-burner text-xl mb-1"></i>
+            <span class="absolute top-0 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            <span class="text-[10px] font-medium">Cocina</span>
+        </button>
+        <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors">
+            <i class="fas fa-cog text-xl mb-1"></i>
+            <span class="text-[10px] font-medium">Ajustes</span>
+        </button>
+    </nav>
+
+    <!-- Lógica temporal para interacción -->
+    <script>
+        function abrirMesa(id, nombre, estado) {
+            console.log(`Abriendo ${nombre} - Estado: ${estado}`);
+            // Aquí irá la lógica para abrir el modal o cambiar a la vista de toma de pedido
+            alert(`Abriendo panel para tomar pedido en la ${nombre}`);
+        }
+    </script>
+    <div id="modal-pedido" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 hidden flex justify-end transition-opacity duration-300 opacity-0">
+        <div id="panel-pedido" class="w-full md:w-10/12 lg:w-4/5 h-full bg-slate-50 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300">
+            
+            <header class="bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <div>
+                    <h2 id="titulo-mesa-modal" class="text-2xl font-bold text-gray-800">Mesa Seleccionada</h2>
+                    <p class="text-sm text-gray-500">Nueva Comanda</p>
+                </div>
+                <button onclick="cerrarTomaPedido()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-600 flex items-center justify-center transition-colors text-xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </header>
+
+            <div class="flex-1 flex overflow-hidden">
+                
+                <div class="flex-1 flex flex-col border-r border-gray-200 bg-white">
+                    <div class="flex gap-2 p-4 overflow-x-auto border-b border-gray-100">
+                        <button class="px-5 py-2 bg-indigo-600 text-white rounded-full font-medium shadow-sm whitespace-nowrap">🍕 Pizzas</button>
+                        <button class="px-5 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-full font-medium whitespace-nowrap transition">🥤 Bebidas</button>
+                        <button class="px-5 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-full font-medium whitespace-nowrap transition">🍟 Adicionales</button>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-4 bg-slate-50">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="contenedor-productos">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="w-80 lg:w-96 bg-white flex flex-col">
+                    <div class="p-4 bg-gray-50 border-b border-gray-200">
+                        <h3 class="font-bold text-gray-700 text-lg flex items-center gap-2">
+                            <i class="fas fa-receipt"></i> Resumen de Orden
+                        </h3>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-4 space-y-3" id="lista-comanda">
+                        <div class="text-center text-gray-400 mt-10 text-sm">
+                            <i class="fas fa-shopping-basket text-4xl mb-3 text-gray-200"></i>
+                            <p>Toca los productos para agregarlos</p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 border-t border-gray-200 bg-gray-50">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-gray-600 font-medium">Total Estimado</span>
+                            <span class="text-2xl font-bold text-gray-800" id="total-comanda">$0.00</span>
+                        </div>
+                        <button id="btn-enviar-cocina" onclick="enviarACocina()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-md flex justify-center items-center gap-2 transition-transform active:scale-95 text-lg">
+                            <i class="fas fa-fire-burner"></i> Enviar a Cocina
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div id="modal-tallas" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[60] hidden flex-col items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div id="panel-tallas" class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="p-6 text-center border-b border-gray-100 bg-gray-50">
+                <span class="text-6xl mb-3 block drop-shadow-md" id="modal-tallas-emoji">🍕</span>
+                <h3 class="text-2xl font-black text-gray-800" id="modal-tallas-nombre">Nombre Pizza</h3>
+                <p class="text-gray-500 text-sm mt-1 font-medium">Selecciona el tamaño deseado</p>
+            </div>
+            
+            <div class="p-5 space-y-3 bg-white" id="modal-tallas-opciones">
+                </div>
+            
+            <div class="p-4 bg-gray-50 flex justify-center border-t border-gray-100">
+                <button onclick="cerrarModalTallas()" class="px-6 py-3 rounded-xl text-gray-500 font-bold hover:bg-gray-200 hover:text-gray-700 transition-colors w-full">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="js/mesero.js"></script>
+</body>
+</html>

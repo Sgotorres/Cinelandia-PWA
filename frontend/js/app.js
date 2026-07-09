@@ -1,6 +1,8 @@
+import { API_URL } from './config.js'; // <-- Importas la variable dinámica
+
 let carrito = [];
 let menuDataCache = [];
-const API_URL = "http://localhost:3000";
+// Y borras la declaración anterior de API_URL
 
 let tipoEntregaSeleccionado = 'Delivery'; 
 

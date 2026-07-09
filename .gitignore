@@ -10,3 +10,6 @@ backend/.env
 # Archivos del sistema operativo
 .DS_Store
 Thumbs.db
+
+# Configuración local del frontend
+frontend/js/config.js
