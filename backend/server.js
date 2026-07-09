@@ -19,10 +19,19 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 io.on('connection', (socket) => {
-    console.log('🟢 Cliente/Admin conectado al sistema');
-    // Buena práctica: unirse a un room si es admin (lo implementaremos a fondo luego)
+    console.log('🟢 Dispositivo conectado al sistema');
+    
+    // Todos se unen a una sala general (por ahora)
     socket.join('admin-room'); 
-    socket.on('disconnect', () => console.log('🔴 Cliente/Admin desconectado'));
+
+    // NUEVO: Escuchar cuando una tablet cambia el estado de una mesa
+    socket.on('actualizar_estado_mesa', (data) => {
+        // data contiene: { id: 1, estado: 'esperando' }
+        // Se lo reenviamos a TODOS los demás dispositivos excepto al que originó el cambio
+        socket.broadcast.emit('sincronizar_mesa', data);
+    });
+
+    socket.on('disconnect', () => console.log('🔴 Dispositivo desconectado'));
 });
 
 app.use('/', require('./src/routes/menu.routes'));

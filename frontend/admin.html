@@ -158,6 +158,22 @@
         setTimeout(() => titulo.classList.remove('text-red-500', 'animate-bounce'), 3000);
     });
 
+    // NUEVO: Escuchar cuando un mesero añade productos a un ticket existente
+    socket.on('pedido_actualizado', (data) => {
+        reproducirCampana(); // Suena la campana para avisar a los cocineros
+        cargarPedidos(); // Recarga la cuadrícula para traer los nuevos productos al ticket
+        
+        // Efecto visual distinto para saber que fue una actualización
+        const titulo = document.getElementById('titulo-pedidos');
+        titulo.innerText = `¡MESA ${data.mesa} AÑADIÓ PRODUCTOS!`;
+        titulo.classList.add('text-orange-500', 'animate-pulse');
+        
+        setTimeout(() => {
+            titulo.innerText = "PEDIDOS EN COCINA";
+            titulo.classList.remove('text-orange-500', 'animate-pulse');
+        }, 5000); // Vuelve a la normalidad en 5 segundos
+    });
+
     // --- LÓGICA DE NAVEGACIÓN ---
     function verTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(section => section.classList.add('hidden'));
@@ -200,11 +216,15 @@
                         </div>
                         <span class="bg-gray-100 text-gray-800 text-[10px] font-bold px-2 py-1 rounded-md uppercase">${p.estado}</span>
                     </div>
-                    
+
                     <div class="space-y-3 mb-6">
                         ${p.items.map(item => `
                             <div class="flex justify-between text-sm border-b border-gray-50 pb-2">
-                                <span class="text-gray-600"><span class="font-bold text-red-600">${item.cantidad}x</span> ${item.nombre}</span>
+                                <span class="text-gray-600">
+                                    <span class="font-bold text-red-600">${item.cantidad}x</span> 
+                                    ${item.nombre} 
+                                    ${item.talla ? `<span class="text-xs text-gray-400 font-bold ml-1">(${item.talla})</span>` : ''}
+                                </span>
                             </div>
                         `).join('')}
                     </div>

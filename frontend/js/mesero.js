@@ -5,6 +5,23 @@ let mesaActual = null;
 let carritoMesa = [];
 let menuProductos = [];
 
+// NUEVO: Conexión WebSocket
+const socket = io(API_URL);
+
+socket.on('connect', () => {
+    console.log('🟢 Conectado al radar en tiempo real (Socket.io)');
+});
+
+// NUEVO: Escuchar cambios de mesa que hacen otros meseros
+socket.on('sincronizar_mesa', (data) => {
+    // Buscamos la mesa en nuestro arreglo local
+    const mesaIndex = listaMesas.findIndex(m => m.id === data.id);
+    if (mesaIndex !== -1) {
+        listaMesas[mesaIndex].estado = data.estado; // Ej: cambia a 'esperando' o 'libre'
+        renderizarMesas(); // Pintamos de nuevo la cuadrícula para ver el cambio de color
+    }
+});
+
 // Arreglo dinámico de mesas (Aquí puedes agregar más después)
 let listaMesas = [
     { id: 1, nombre: 'Mesa 1', estado: 'libre', tiempo: '' },
@@ -113,11 +130,28 @@ function renderizarProductos() {
     });
 }
 
-// 5. Control del Modal de Mesas
+// 5. Control del Modal de Mesas (ACTUALIZADO)
 function abrirMesa(id, nombre, estado) {
     mesaActual = { id, nombre, estado };
-    carritoMesa = [];
+    carritoMesa = []; // Siempre inicia vacío para tomar SOLO los productos nuevos
+    
     document.getElementById('titulo-mesa-modal').innerText = nombre;
+    
+    const btnEnviar = document.getElementById('btn-enviar-cocina');
+    const subtitulo = document.getElementById('subtitulo-mesa-modal');
+    
+    // VERIFICAMOS EL ESTADO DE LA MESA
+    if (estado === 'libre') {
+        subtitulo.innerText = "Nueva Comanda";
+        btnEnviar.innerHTML = '<i class="fas fa-fire-burner"></i> Enviar a Cocina';
+        btnEnviar.onclick = enviarACocina;
+    } else {
+        // La mesa está 'esperando' u 'ocupada'
+        subtitulo.innerText = "Añadiendo productos al ticket actual";
+        btnEnviar.innerHTML = '<i class="fas fa-plus"></i> Añadir a la Orden';
+        btnEnviar.onclick = agregarAPedidoExistente; 
+    }
+
     actualizarResumenComanda();
 
     const modal = document.getElementById('modal-pedido');
@@ -128,7 +162,67 @@ function abrirMesa(id, nombre, estado) {
         panel.classList.remove('translate-x-full');
     }, 10);
 }
+// NUEVA FUNCIÓN: Envía los productos extra a la base de datos
+window.agregarAPedidoExistente = async () => {
+    if (carritoMesa.length === 0) {
+        alert("⚠️ Agrega productos antes de añadir a la orden.");
+        return;
+    }
+    
+    const btnEnviar = document.getElementById('btn-enviar-cocina');
+    const textoOriginal = btnEnviar.innerHTML;
+    btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Añadiendo...';
+    btnEnviar.disabled = true;
 
+    try {
+        const carritoLimpiado = carritoMesa.map(item => ({
+            producto_id: item.producto_id,
+            cantidad: item.cantidad,
+            talla: item.talla
+        }));
+
+        const payload = {
+            mesa: mesaActual.nombre,
+            carrito: carritoLimpiado
+        };
+
+        // Hacemos un POST a la nueva ruta /pedidos/agregar
+        const respuesta = await fetch(`${API_URL}/pedidos/agregar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (respuesta.ok) {
+            alert(`✅ ¡Productos extra añadidos a la ${mesaActual.nombre} con éxito!`);
+            cerrarTomaPedido();
+
+            // SÚPER DETALLE UX: Si la mesa estaba comiendo (roja), al pedir algo nuevo 
+            // la volvemos a poner amarilla ('esperando') para que el admin sepa 
+            // que tienen un nuevo artículo pendiente de cocinar.
+            const mesaIndex = listaMesas.findIndex(m => m.id === mesaActual.id);
+            if (mesaIndex !== -1) {
+                listaMesas[mesaIndex].estado = 'esperando';
+                renderizarMesas(); 
+                
+                // Avisamos a las demás tablets
+                socket.emit('actualizar_estado_mesa', { 
+                    id: mesaActual.id, 
+                    estado: 'esperando' 
+                });
+            }
+        } else {
+            const dataError = await respuesta.json();
+            throw new Error(dataError.error || "Error al añadir productos en PostgreSQL");
+        }
+    } catch (error) {
+        console.error("Error al añadir al pedido:", error);
+        alert(`❌ Fallo la actualización: ${error.message}`);
+    } finally {
+        btnEnviar.innerHTML = textoOriginal;
+        btnEnviar.disabled = false;
+    }
+};
 function cerrarTomaPedido() {
     const modal = document.getElementById('modal-pedido');
     const panel = document.getElementById('panel-pedido');
@@ -287,7 +381,13 @@ async function enviarACocina() {
             const mesaIndex = listaMesas.findIndex(m => m.id === mesaActual.id);
             if (mesaIndex !== -1) {
                 listaMesas[mesaIndex].estado = 'esperando';
-                renderizarMesas(); 
+                renderizarMesas();
+                // NUEVO: Avisarle al backend que cambiamos el estado de esta mesa
+                // para que le avise a las demás tablets
+                socket.emit('actualizar_estado_mesa', { 
+                    id: mesaActual.id, 
+                    estado: 'esperando' 
+                }); 
             }
         } else {
             const dataError = await respuesta.json();
