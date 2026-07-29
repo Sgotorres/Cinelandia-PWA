@@ -4,6 +4,24 @@ import { API_URL } from './config.js';
 let mesaActual = null;
 let carritoMesa = [];
 let menuProductos = [];
+// --- NUEVAS VARIABLES PARA MITADES ---
+let modoMitadYMitad = false;
+let mitadesSeleccionadas = []; // Guardará: { producto, talla, precio }
+
+// --- EVENTO DEL INTERRUPTOR ---
+document.getElementById('toggle-mitades').addEventListener('change', function(e) {
+    modoMitadYMitad = e.target.checked;
+    const textoEstado = document.getElementById('texto-estado-mitades');
+    
+    if (modoMitadYMitad) {
+        textoEstado.innerText = "Toca la 1ra mitad...";
+        textoEstado.classList.replace('text-indigo-600', 'text-orange-600');
+    } else {
+        textoEstado.innerText = "Apagado";
+        textoEstado.classList.replace('text-orange-600', 'text-indigo-600');
+        mitadesSeleccionadas = []; // Limpiamos por si el mesero se arrepiente
+    }
+});
 
 // NUEVO: Conexión WebSocket
 const socket = io(API_URL);
@@ -22,23 +40,12 @@ socket.on('sincronizar_mesa', (data) => {
     }
 });
 
-// Arreglo dinámico de mesas (Aquí puedes agregar más después)
-let listaMesas = [
-    { id: 1, nombre: 'Mesa 1', estado: 'libre', tiempo: '' },
-    { id: 2, nombre: 'Mesa 2', estado: 'ocupada', tiempo: '45m' },
-    { id: 3, nombre: 'Mesa 3', estado: 'esperando', tiempo: '' },
-    { id: 4, nombre: 'Mesa 4', estado: 'libre', tiempo: '' },
-    { id: 5, nombre: 'Mesa 5', estado: 'libre', tiempo: '' },
-    { id: 6, nombre: 'Mesa 6', estado: 'ocupada', tiempo: '12m' },
-    { id: 7, nombre: 'Mesa 7', estado: 'libre', tiempo: '' },
-    { id: 8, nombre: 'Mesa 8', estado: 'libre', tiempo: '' },
-    { id: 9, nombre: 'Mesa 9', estado: 'libre', tiempo: '' },
-    { id: 10, nombre: 'Mesa 10', estado: 'libre', tiempo: '' }
-];
-
+// Arreglo dinámico de mesas (Ahora viene de la Base de Datos)
+let listaMesas = [];
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Iniciando Panel de Mesero conectado a:', API_URL);
     
+    await cargarMesas(); // <-- Descarga las mesas antes de pintar
     renderizarMesas();
     await verificarEstadoTienda();
     await cargarMenu();
@@ -52,6 +59,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.enviarACocina = enviarACocina;
 });
 
+// NUEVA FUNCIÓN: Consulta las mesas en PostgreSQL
+async function cargarMesas() {
+    try {
+        const respuesta = await fetch(`${API_URL}/mesas`);
+        if (respuesta.ok) {
+            listaMesas = await respuesta.json();
+        } else {
+            console.error("Error en respuesta de mesas");
+        }
+    } catch (error) {
+        console.error("Error al cargar mesas desde la BD:", error);
+    }
+}
+
 // 1. Verificamos si la tienda está abierta
 async function verificarEstadoTienda() {
     try {
@@ -64,10 +85,16 @@ async function verificarEstadoTienda() {
 }
 
 // 2. Pintamos el mapa de mesas
+// 2. Pintamos el mapa de mesas y actualizamos contadores
 function renderizarMesas() {
     const contenedor = document.getElementById('contenedor-mesas');
     if (!contenedor) return;
     contenedor.innerHTML = '';
+
+    // Contadores en cero
+    let totalLibres = 0;
+    let totalOcupadas = 0;
+    let totalEspera = 0;
 
     listaMesas.forEach(mesa => {
         const card = document.createElement('div');
@@ -76,12 +103,15 @@ function renderizarMesas() {
         let contenidoHtml = '';
 
         if (mesa.estado === 'libre') {
+            totalLibres++; // Sumamos 1
             barraColor = 'bg-green-500'; bordeColor = 'border-gray-200';
             contenidoHtml = `<i class="fas fa-utensils text-3xl text-gray-300 mb-3"></i><h3 class="text-xl font-bold text-gray-800">${mesa.nombre}</h3><p class="text-sm text-green-600 mt-1 font-medium">Disponible</p>`;
         } else if (mesa.estado === 'ocupada') {
+            totalOcupadas++; // Sumamos 1
             barraColor = 'bg-red-500'; bordeColor = 'border-red-200';
             contenidoHtml = `<div class="flex gap-1 mb-3 text-red-400"><i class="fas fa-user"></i><i class="fas fa-user"></i></div><h3 class="text-xl font-bold text-gray-800">${mesa.nombre}</h3><p class="text-sm text-red-600 mt-1 font-medium">Consumiendo</p>${mesa.tiempo ? `<div class="absolute top-3 right-3 text-xs font-bold text-gray-400">${mesa.tiempo}</div>` : ''}`;
         } else if (mesa.estado === 'esperando') {
+            totalEspera++; // Sumamos 1
             barraColor = 'bg-yellow-400'; bordeColor = 'border-yellow-300';
             contenidoHtml = `<div class="absolute top-2 right-2 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div><div class="absolute top-2 right-2 w-3 h-3 bg-yellow-500 rounded-full"></div><i class="fas fa-bell-concierge text-3xl text-yellow-500 mb-3"></i><h3 class="text-xl font-bold text-gray-800">${mesa.nombre}</h3><p class="text-sm text-yellow-600 mt-1 font-medium">Por Atender</p>`;
         }
@@ -91,6 +121,15 @@ function renderizarMesas() {
         card.innerHTML = `<div class="h-2 w-full ${barraColor}"></div><div class="p-5 flex flex-col items-center justify-center">${contenidoHtml}</div>`;
         contenedor.appendChild(card);
     });
+
+    // Actualizamos los números en la pantalla del mesero
+    const badgeLibres = document.getElementById('badge-libres');
+    const badgeOcupadas = document.getElementById('badge-ocupadas');
+    const badgeEspera = document.getElementById('badge-espera');
+
+    if (badgeLibres) badgeLibres.innerText = `Libres: ${totalLibres}`;
+    if (badgeOcupadas) badgeOcupadas.innerText = `Ocupadas: ${totalOcupadas}`;
+    if (badgeEspera) badgeEspera.innerText = `Espera: ${totalEspera}`;
 }
 
 // 3. Cargamos los productos de la BD
@@ -236,18 +275,35 @@ function cerrarTomaPedido() {
 
 // 6. Modal de Tallas (El nuevo diseño bonito)
 function abrirModalTallas(producto) {
+    // Si estamos en modo mitad y ya escogimos la primera, NO abrimos el modal
+    if (modoMitadYMitad && mitadesSeleccionadas.length === 1) {
+        const primeraMitad = mitadesSeleccionadas[0];
+        const tallaPrevia = primeraMitad.talla;
+        
+        // Buscamos el precio de esta 2da pizza según la talla elegida en la 1ra
+        let precioSegundaMitad = 0;
+        if (tallaPrevia === 'Mediana') precioSegundaMitad = Number(producto.precio) || 0;
+        else if (tallaPrevia === 'Grande') precioSegundaMitad = Number(producto.precio_g) || 0;
+        else if (tallaPrevia === 'Familiar') precioSegundaMitad = Number(producto.precio_f) || 0;
+
+        // Procesamos la pizza combinada de inmediato
+        procesarMitadYMitad(producto, tallaPrevia, precioSegundaMitad);
+        return; 
+    }
+
+    // FLUJO NORMAL (o Primera Mitad): Abrir el modal
     document.getElementById('modal-tallas-nombre').innerText = producto.nombre;
     document.getElementById('modal-tallas-emoji').innerText = producto.emoji || '🍕';
-
+    
     const opcionesContenedor = document.getElementById('modal-tallas-opciones');
     opcionesContenedor.innerHTML = '';
-
+    
     const tallas = [
         { nombre: 'Mediana', precio: Number(producto.precio) || 0 },
         { nombre: 'Grande', precio: Number(producto.precio_g) || 0 },
         { nombre: 'Familiar', precio: Number(producto.precio_f) || 0 }
     ];
-
+    
     tallas.forEach(talla => {
         if (talla.precio > 0) {
             const btn = document.createElement('button');
@@ -260,7 +316,7 @@ function abrirModalTallas(producto) {
             opcionesContenedor.appendChild(btn);
         }
     });
-
+    
     const modal = document.getElementById('modal-tallas');
     const panel = document.getElementById('panel-tallas');
     modal.classList.remove('hidden');
@@ -284,7 +340,19 @@ function cerrarModalTallas() {
 
 // 7. Lógica del Carrito y Envío
 function agregarAlCarritoConTalla(producto, tallaSeleccionada, precioReal) {
-    const itemExistente = carritoMesa.find(item => item.producto_id === producto.id && item.talla === tallaSeleccionada);
+    // Si estamos en modo mitad y es la PRIMERA pizza que se elige
+    if (modoMitadYMitad && mitadesSeleccionadas.length === 0) {
+        mitadesSeleccionadas.push({ producto: producto, talla: tallaSeleccionada, precio: precioReal });
+        
+        // Actualizamos UI para pedir la segunda
+        document.getElementById('texto-estado-mitades').innerText = `1/2 ${producto.nombre} (${tallaSeleccionada}). Toca la 2da...`;
+        cerrarModalTallas();
+        return;
+    }
+
+    // Lógica Normal
+    const itemExistente = carritoMesa.find(item => item.producto_id === producto.id && item.talla === tallaSeleccionada && !item.es_mitad);
+    
     if (itemExistente) {
         itemExistente.cantidad += 1;
     } else {
@@ -293,11 +361,38 @@ function agregarAlCarritoConTalla(producto, tallaSeleccionada, precioReal) {
             nombre: producto.nombre,
             cantidad: 1,
             talla: tallaSeleccionada,
-            precio_aplicado: precioReal
+            precio_aplicado: precioReal,
+            es_mitad: false
         });
     }
     cerrarModalTallas();
     actualizarResumenComanda();
+}
+
+// FUNCIÓN NUEVA: Combina las mitades y cobra la más cara
+function procesarMitadYMitad(segundoProducto, talla, precioSegundaMitad) {
+    const primeraMitad = mitadesSeleccionadas[0];
+    
+    // Regla de oro: Cobrar el precio mayor
+    const precioFinal = Math.max(primeraMitad.precio, precioSegundaMitad);
+    const nombreCombinado = `1/2 ${primeraMitad.producto.nombre} y 1/2 ${segundoProducto.nombre}`;
+    
+    carritoMesa.push({
+        producto_id: `mixta-${primeraMitad.producto.id}-${segundoProducto.id}`, // ID único compuesto
+        nombre: nombreCombinado,
+        cantidad: 1,
+        talla: talla,
+        precio_aplicado: precioFinal,
+        es_mitad: true,
+        ids_mitades: [primeraMitad.producto.id, segundoProducto.id] // Útil para descontar inventario en el backend
+    });
+
+    actualizarResumenComanda();
+    
+    // Apagar el switch y reiniciar variables
+    const toggle = document.getElementById('toggle-mitades');
+    toggle.checked = false;
+    toggle.dispatchEvent(new Event('change')); // Fuerza a que corra el evento para limpiar los textos
 }
 
 function eliminarDelCarrito(index) {
@@ -360,7 +455,10 @@ async function enviarACocina() {
         const carritoLimpiado = carritoMesa.map(item => ({
             producto_id: item.producto_id,
             cantidad: item.cantidad,
-            talla: item.talla
+            talla: item.talla,
+            precio_unitario: item.precio_aplicado, // Te sugiero enviarlo siempre
+            es_mitad: item.es_mitad || false,
+            ids_mitades: item.ids_mitades || []
         }));
 
         const payload = {
