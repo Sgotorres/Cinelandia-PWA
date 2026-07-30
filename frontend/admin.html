@@ -230,7 +230,7 @@
                     </div>
 
                     <div class="flex flex-col gap-3">
-                        <select onchange="actualizarEstado(${p.id}, this.value)" 
+                        <select onchange="actualizarEstado(${p.id}, this.value, '${p.mesa}')"
                                 class="w-full bg-gray-50 border-none text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-red-500 transition cursor-pointer">
                             <option value="pendiente" ${p.estado === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
                             <option value="cocinando" ${p.estado === 'cocinando' ? 'selected' : ''}>👨‍🍳 Cocinando</option>
@@ -246,8 +246,10 @@
         }
     }
 
-    async function actualizarEstado(id, nuevoEstado) {
+// ¡Añadimos nombreMesa como tercer parámetro!
+    async function actualizarEstado(id, nuevoEstado, nombreMesa) {
         try {
+            // 1. Actualizamos el estado del pedido en la base de datos
             const res = await fetch(`http://localhost:3000/pedidos/${id}`, {
                 method: 'PATCH',
                 headers: {
@@ -256,8 +258,41 @@
                 },
                 body: JSON.stringify({estado: nuevoEstado})
             });
-            if (res.ok) cargarPedidos();
-        } catch (e) { alert("Error al actualizar estado"); }
+            
+            if (res.ok) {
+                cargarPedidos(); // Recarga las tarjetas del panel admin
+                
+                // 2. Si el pedido se marca como finalizado, liberamos la mesa
+                if (nuevoEstado === 'finalizado' || nuevoEstado === 'pagado') {
+                    try {
+                        // Traemos la lista de mesas para obtener el ID numérico
+                        const resMesas = await fetch('http://localhost:3000/mesas');
+                        const mesas = await resMesas.json();
+                        
+                        // Buscamos la mesa usando el nombre exacto (limpiando espacios por si acaso)
+                        const mesaObj = mesas.find(m => m.nombre.trim() === nombreMesa.trim());
+                        
+                        if (mesaObj) {
+                            // Disparamos la señal por WebSocket para que los meseros la vean verde
+                            socket.emit('actualizar_estado_mesa', { 
+                                id: mesaObj.id, 
+                                estado: 'libre' 
+                            });
+                            
+                            // Confirmación visual para ti (puedes borrar esta línea cuando veas que funciona)
+                            console.log(`✅ ¡Éxito! Se envió la señal para liberar la ${nombreMesa}`);
+                        } else {
+                            console.error(`⚠️ No se encontró el ID para la mesa: ${nombreMesa}`);
+                        }
+                    } catch(err) {
+                        console.error("Error al intentar liberar la mesa:", err);
+                    }
+                }
+            }
+        } catch (e) { 
+            console.error(e);
+            alert("Error de conexión al actualizar estado"); 
+        }
     }
 
     function getEstadoColor(estado) {

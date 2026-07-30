@@ -45,7 +45,8 @@ let listaMesas = [];
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Iniciando Panel de Mesero conectado a:', API_URL);
     
-    await cargarMesas(); // <-- Descarga las mesas antes de pintar
+    await cargarMesas(); 
+    await sincronizarMesasConComandasActivas(); // <-- ¡NUEVO! Comprueba si hay pedidos reales
     renderizarMesas();
     await verificarEstadoTienda();
     await cargarMenu();
@@ -58,6 +59,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.eliminarDelCarrito = eliminarDelCarrito;
     window.enviarACocina = enviarACocina;
 });
+
+// NUEVA FUNCIÓN: Sincroniza y limpia automáticamente los estados falsos al recargar la página
+// NUEVA FUNCIÓN: Sincroniza el estado real de las mesas al recargar la página
+async function sincronizarMesasConComandasActivas() {
+    try {
+        // 1. Obtenemos las comandas activas reales del panel de administración
+        const loginRes = await fetch(`${API_URL}/admin/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: "cinelandia2026" })
+        });
+        if (!loginRes.ok) return;
+        const { token } = await loginRes.json();
+
+        const respuesta = await fetch(`${API_URL}/admin/pedidos`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!respuesta.ok) return;
+        
+        let comandas = await respuesta.json();
+        if (!Array.isArray(comandas) && Array.isArray(comandas.pedidos)) comandas = comandas.pedidos;
+
+        // 2. Filtramos únicamente las comandas que siguen en curso en la cocina (excluyendo finalizados/pagados)
+        const activas = comandas.filter(c => {
+            const est = String(c.estado || '').toLowerCase();
+            return est !== 'pagado' && est !== 'finalizado' && est !== 'entregado' && est !== 'cancelado';
+        });
+
+        // Creamos una lista limpia con los nombres de las mesas que SÍ tienen pedidos reales activos
+        const mesasConPedidosActivos = activas.map(c => String(c.mesa).trim());
+
+        // 3. CORRECCIÓN AUTOMÁTICA AL CARGAR/RECARGAR:
+        // Si la BD del mesero cree que la mesa está ocupada/esperando, pero no hay un pedido activo real, la pasamos a 'libre'.
+        listaMesas.forEach(mesa => {
+            const nombreMesa = String(mesa.nombre).trim();
+            const tienePedidoReal = mesasConPedidosActivos.includes(nombreMesa);
+
+            if (!tienePedidoReal) {
+                mesa.estado = 'libre'; // Forzamos a verde si no hay pedido activo en curso
+            } else {
+                // Si sí tiene un pedido real, mantenemos o ajustamos su estado según la comanda
+                const comandaReal = activas.find(c => String(c.mesa).trim() === nombreMesa);
+                if (comandaReal) {
+                    const estComanda = String(comandaReal.estado || '').toLowerCase();
+                    if (estComanda === 'cocinando') mesa.estado = 'cocinando';
+                    else if (estComanda === 'listo' || estComanda === 'preparado') mesa.estado = 'listo';
+                    else mesa.estado = 'esperando';
+                }
+            }
+        });
+
+    } catch (e) {
+        console.error("No se pudo sincronizar el estado inicial de las mesas:", e);
+    }
+}
 
 // NUEVA FUNCIÓN: Consulta las mesas en PostgreSQL
 async function cargarMesas() {
@@ -86,6 +142,7 @@ async function verificarEstadoTienda() {
 
 // 2. Pintamos el mapa de mesas
 // 2. Pintamos el mapa de mesas y actualizamos contadores
+// 2. Pintamos el mapa de mesas y actualizamos los estados y colores correctamente
 function renderizarMesas() {
     const contenedor = document.getElementById('contenedor-mesas');
     if (!contenedor) return;
@@ -102,18 +159,46 @@ function renderizarMesas() {
         let bordeColor = 'border-gray-200';
         let contenidoHtml = '';
 
-        if (mesa.estado === 'libre') {
-            totalLibres++; // Sumamos 1
-            barraColor = 'bg-green-500'; bordeColor = 'border-gray-200';
-            contenidoHtml = `<i class="fas fa-utensils text-3xl text-gray-300 mb-3"></i><h3 class="text-xl font-bold text-gray-800">${mesa.nombre}</h3><p class="text-sm text-green-600 mt-1 font-medium">Disponible</p>`;
-        } else if (mesa.estado === 'ocupada') {
-            totalOcupadas++; // Sumamos 1
-            barraColor = 'bg-red-500'; bordeColor = 'border-red-200';
-            contenidoHtml = `<div class="flex gap-1 mb-3 text-red-400"><i class="fas fa-user"></i><i class="fas fa-user"></i></div><h3 class="text-xl font-bold text-gray-800">${mesa.nombre}</h3><p class="text-sm text-red-600 mt-1 font-medium">Consumiendo</p>${mesa.tiempo ? `<div class="absolute top-3 right-3 text-xs font-bold text-gray-400">${mesa.tiempo}</div>` : ''}`;
-        } else if (mesa.estado === 'esperando') {
-            totalEspera++; // Sumamos 1
-            barraColor = 'bg-yellow-400'; bordeColor = 'border-yellow-300';
-            contenidoHtml = `<div class="absolute top-2 right-2 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div><div class="absolute top-2 right-2 w-3 h-3 bg-yellow-500 rounded-full"></div><i class="fas fa-bell-concierge text-3xl text-yellow-500 mb-3"></i><h3 class="text-xl font-bold text-gray-800">${mesa.nombre}</h3><p class="text-sm text-yellow-600 mt-1 font-medium">Por Atender</p>`;
+        const estado = String(mesa.estado || '').toLowerCase();
+
+        if (estado === 'libre') {
+            totalLibres++; // Solo suma si el estado real es 'libre'
+            barraColor = 'bg-green-500'; 
+            bordeColor = 'border-gray-200';
+            contenidoHtml = `
+                <i class="fas fa-utensils text-3xl text-gray-300 mb-3"></i>
+                <h3 class="text-xl font-bold text-gray-800">${mesa.nombre}</h3>
+                <p class="text-sm text-green-600 mt-1 font-medium">Disponible</p>`;
+        } 
+        else if (estado === 'cocinando') {
+            totalEspera++;
+            barraColor = 'bg-orange-500'; 
+            bordeColor = 'border-orange-300';
+            contenidoHtml = `
+                <div class="absolute top-2 right-2 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                <i class="fas fa-bell-concierge text-3xl text-orange-500 mb-3"></i>
+                <h3 class="text-xl font-bold text-gray-800">${mesa.nombre}</h3>
+                <p class="text-sm text-orange-600 mt-1 font-black">Cocinando 👨‍🍳</p>`;
+        } 
+        else if (estado === 'listo' || estado === 'preparado') {
+            totalOcupadas++; // CAMBIO: Ahora cuenta como mesa ocupada/con atención pendiente de entrega
+            barraColor = 'bg-blue-600'; 
+            bordeColor = 'border-blue-400';
+            contenidoHtml = `
+                <div class="absolute top-2 right-2 w-3 h-3 bg-blue-500 rounded-full animate-ping"></div>
+                <i class="fas fa-bell text-3xl text-blue-600 mb-3"></i>
+                <h3 class="text-xl font-bold text-gray-800">${mesa.nombre}</h3>
+                <p class="text-sm text-blue-700 mt-1 font-black">¡LISTO PARA SERVIR! 🔔</p>`;
+        }
+        else {
+            totalEspera++;
+            barraColor = 'bg-yellow-400'; 
+            bordeColor = 'border-yellow-300';
+            contenidoHtml = `
+                <div class="absolute top-2 right-2 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
+                <i class="fas fa-bell-concierge text-3xl text-yellow-500 mb-3"></i>
+                <h3 class="text-xl font-bold text-gray-800">${mesa.nombre}</h3>
+                <p class="text-sm text-yellow-600 mt-1 font-medium">Por Atender</p>`;
         }
 
         card.className = `mesa-card bg-white rounded-xl border ${bordeColor} overflow-hidden shadow-sm cursor-pointer relative`;
@@ -122,14 +207,24 @@ function renderizarMesas() {
         contenedor.appendChild(card);
     });
 
+    // --- FILTRO DE SEGURIDAD PARA EL MÁXIMO DE MESAS ---
+    // Si por registros duplicados en la BD la suma excede tus 10 mesas reales, 
+    // forzamos el límite matemático para que nunca muestre de más.
+    const totalMesasReales = 10;
+    if (totalLibres > totalMesasReales) {
+        totalLibres = totalMesasReales - (totalOcupadas + totalEspera);
+        if (totalLibres < 0) totalLibres = 0;
+    }
+
     // Actualizamos los números en la pantalla del mesero
+// Actualizamos los números en la pantalla del mesero usando los contadores reales
     const badgeLibres = document.getElementById('badge-libres');
     const badgeOcupadas = document.getElementById('badge-ocupadas');
     const badgeEspera = document.getElementById('badge-espera');
 
     if (badgeLibres) badgeLibres.innerText = `Libres: ${totalLibres}`;
     if (badgeOcupadas) badgeOcupadas.innerText = `Ocupadas: ${totalOcupadas}`;
-    if (badgeEspera) badgeEspera.innerText = `Espera: ${totalEspera}`;
+    if (badgeEspera) badgeEspera.innerText = `En Proceso: ${totalEspera}`;
 }
 
 // 3. Cargamos los productos de la BD
@@ -202,6 +297,7 @@ function abrirMesa(id, nombre, estado) {
     }, 10);
 }
 // NUEVA FUNCIÓN: Envía los productos extra a la base de datos
+// NUEVA FUNCIÓN: Envía los productos extra a la base de datos con Autocorrección
 window.agregarAPedidoExistente = async () => {
     if (carritoMesa.length === 0) {
         alert("⚠️ Agrega productos antes de añadir a la orden.");
@@ -225,7 +321,6 @@ window.agregarAPedidoExistente = async () => {
             carrito: carritoLimpiado
         };
 
-        // Hacemos un POST a la nueva ruta /pedidos/agregar
         const respuesta = await fetch(`${API_URL}/pedidos/agregar`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -236,15 +331,11 @@ window.agregarAPedidoExistente = async () => {
             alert(`✅ ¡Productos extra añadidos a la ${mesaActual.nombre} con éxito!`);
             cerrarTomaPedido();
 
-            // SÚPER DETALLE UX: Si la mesa estaba comiendo (roja), al pedir algo nuevo 
-            // la volvemos a poner amarilla ('esperando') para que el admin sepa 
-            // que tienen un nuevo artículo pendiente de cocinar.
             const mesaIndex = listaMesas.findIndex(m => m.id === mesaActual.id);
             if (mesaIndex !== -1) {
                 listaMesas[mesaIndex].estado = 'esperando';
                 renderizarMesas(); 
                 
-                // Avisamos a las demás tablets
                 socket.emit('actualizar_estado_mesa', { 
                     id: mesaActual.id, 
                     estado: 'esperando' 
@@ -252,14 +343,49 @@ window.agregarAPedidoExistente = async () => {
             }
         } else {
             const dataError = await respuesta.json();
-            throw new Error(dataError.error || "Error al añadir productos en PostgreSQL");
+            // Convertimos la respuesta a texto en minúsculas para atrapar cualquier variación del error
+            const textoError = JSON.stringify(dataError).toLowerCase();
+            
+            // --- SISTEMA DE AUTOCORRECCIÓN INTELIGENTE ---
+            if (respuesta.status === 400 && (textoError.includes("pedido activo") || textoError.includes("curso"))) {
+                
+                alert("⚠️ El administrador ya finalizó el pedido anterior de esta mesa.\n\nLiberando la mesa automáticamente... Presiona ENVIAR nuevamente para procesar estos productos como una NUEVA COMANDA.");
+                
+                // 1. Corregimos el error de la Base de Datos desde el Frontend (Ponemos la mesa Libre)
+                const mesaIndex = listaMesas.findIndex(m => m.id === mesaActual.id);
+                if (mesaIndex !== -1) {
+                    listaMesas[mesaIndex].estado = 'libre';
+                    renderizarMesas();
+                }
+                mesaActual.estado = 'libre';
+                
+                // 2. Le avisamos a las demás tablets que la mesa ya está libre
+                socket.emit('actualizar_estado_mesa', { 
+                    id: mesaActual.id, 
+                    estado: 'libre' 
+                });
+                
+                // 3. Cambiamos el modal al modo "Nueva Comanda" para evitar el choque con la BD
+                document.getElementById('subtitulo-mesa-modal').innerText = "Nueva Comanda";
+                btnEnviar.innerHTML = '<i class="fas fa-fire-burner"></i> Enviar a Cocina (Nueva Orden)';
+                btnEnviar.onclick = enviarACocina;
+                btnEnviar.disabled = false;
+                
+                return; // Detenemos la función aquí para no mostrar el error rojo
+            }
+            // ---------------------------------
+
+            throw new Error(dataError.error || dataError.message || "Error al añadir productos en la base de datos");
         }
     } catch (error) {
         console.error("Error al añadir al pedido:", error);
         alert(`❌ Fallo la actualización: ${error.message}`);
     } finally {
-        btnEnviar.innerHTML = textoOriginal;
-        btnEnviar.disabled = false;
+        // Solo devolvemos el botón a su estado original si NO se activó la autocorrección
+        if (btnEnviar.onclick !== enviarACocina) {
+            btnEnviar.innerHTML = textoOriginal;
+            btnEnviar.disabled = false;
+        }
     }
 };
 function cerrarTomaPedido() {
@@ -499,3 +625,182 @@ async function enviarACocina() {
         btnEnviar.disabled = false;
     }
 }
+// Exponer las nuevas funciones globalmente para que el HTML pueda llamarlas
+window.abrirModalComandas = abrirModalComandas;
+window.cerrarModalComandas = cerrarModalComandas;
+
+// Función para abrir y animar el modal
+async function abrirModalComandas() {
+    const modal = document.getElementById('modal-ver-comandas');
+    const panel = document.getElementById('panel-ver-comandas');
+    
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        if (window.innerWidth < 768) {
+            panel.classList.remove('translate-y-full'); // Animación móvil
+        } else {
+            panel.classList.remove('scale-95'); // Animación PC/Tablet
+        }
+    }, 10);
+
+    await cargarYRenderizarComandas();
+}
+
+// Función para cerrar y animar el modal
+function cerrarModalComandas() {
+    const modal = document.getElementById('modal-ver-comandas');
+    const panel = document.getElementById('panel-ver-comandas');
+    
+    modal.classList.add('opacity-0');
+    if (window.innerWidth < 768) {
+        panel.classList.add('translate-y-full');
+    } else {
+        panel.classList.add('scale-95');
+    }
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+// Función para obtener los pedidos del backend y pintarlos
+async function cargarYRenderizarComandas() {
+    const contenedor = document.getElementById('contenedor-lista-comandas');
+    
+    // Estado de carga
+    contenedor.innerHTML = `
+        <div class="text-center text-gray-400 mt-10">
+            <i class="fas fa-spinner fa-spin text-4xl mb-3 text-indigo-500"></i>
+            <p class="font-medium text-gray-500">Consultando comandas...</p>
+        </div>`;
+
+    try {
+        // 1. Obtener la llave de seguridad (Token) silenciosamente
+        const loginRes = await fetch(`${API_URL}/admin/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: "cinelandia2026" }) // La misma clave del admin
+        });
+        
+        if (!loginRes.ok) throw new Error("Fallo de seguridad al conectar");
+        const { token } = await loginRes.json();
+
+        // 2. Pedir las comandas usando la ruta correcta y entregando la llave
+        // ¡Ojo aquí! Usamos /admin/pedidos, sin el /api
+        const respuesta = await fetch(`${API_URL}/admin/pedidos`, {
+            method: 'GET',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        }); 
+
+        if (!respuesta.ok) throw new Error(`HTTP Error: ${respuesta.status}`);
+        
+        let comandas = await respuesta.json();
+
+        // Si la respuesta viene envuelta en un objeto
+        if (!Array.isArray(comandas) && Array.isArray(comandas.pedidos)) {
+            comandas = comandas.pedidos;
+        } else if (!Array.isArray(comandas) && Array.isArray(comandas.data)) {
+            comandas = comandas.data;
+        }
+
+        if (!Array.isArray(comandas)) {
+            throw new Error("El formato de respuesta del servidor no es válido.");
+        }
+
+        // 3. Filtramos solo las que estén en proceso/activas
+        const comandasActivas = comandas.filter(c => {
+            const estadoLower = String(c.estado || '').toLowerCase();
+            return estadoLower !== 'pagado' && estadoLower !== 'finalizado' && estadoLower !== 'entregado' && estadoLower !== 'cancelado';
+        });
+
+        if (comandasActivas.length === 0) {
+            contenedor.innerHTML = `
+                <div class="text-center text-gray-500 mt-16 flex flex-col items-center">
+                    <div class="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-clipboard-check text-3xl text-gray-400"></i>
+                    </div>
+                    <p class="font-bold text-lg text-gray-700">Sin comandas activas</p>
+                    <p class="text-sm">No hay pedidos pendientes en este momento.</p>
+                </div>`;
+            return;
+        }
+
+        contenedor.innerHTML = ''; // Limpiar el contenedor
+
+        // 4. Renderizar estilo Admin
+        comandasActivas.forEach(comanda => {
+            const card = document.createElement('div');
+            card.className = "bg-white border border-gray-200 rounded-xl shadow-sm mb-5 overflow-hidden transition-all hover:shadow-md";
+            
+            // Determinar color de la insignia (Badge)
+            const estadoLower = String(comanda.estado || '').toLowerCase();
+            let badgeHTML = '';
+            
+            if (estadoLower === 'esperando' || estadoLower === 'pendiente' || estadoLower === 'cocinando') {
+                badgeHTML = `<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider"><i class="fas fa-fire mr-1"></i>En Cocina</span>`;
+            } else if (estadoLower === 'preparado' || estadoLower === 'listo') {
+                badgeHTML = `<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider"><i class="fas fa-check-circle mr-1"></i>Listo</span>`;
+            } else {
+                badgeHTML = `<span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider">${comanda.estado || 'Activo'}</span>`;
+            }
+
+            // Mapear los ítems del pedido
+            const listaItems = comanda.items || comanda.carrito || comanda.productos || [];
+            let itemsHTML = '';
+            
+            if (Array.isArray(listaItems) && listaItems.length > 0) {
+                listaItems.forEach(item => {
+                    const cantidad = item.cantidad || 1;
+                    const nombre = item.nombre || item.producto_nombre || 'Producto';
+                    const talla = item.talla || '';
+                    const precioUnitario = Number(item.precio_unitario || item.precio || 0);
+
+                    itemsHTML += `
+                        <div class="flex justify-between items-center py-2.5 border-b border-gray-50 last:border-0">
+                            <div class="flex items-center gap-3">
+                                <span class="bg-indigo-50 text-indigo-700 font-black rounded-lg w-8 h-8 flex items-center justify-center text-sm">x${cantidad}</span>
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-gray-800 text-sm">${nombre}</span>
+                                    ${talla ? `<span class="text-[11px] text-gray-500 font-semibold bg-gray-100 px-2 py-0.5 rounded w-max mt-0.5">${talla}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                itemsHTML = `<p class="text-sm text-gray-400 italic py-2">Sin detalles de productos</p>`;
+            }
+
+            const nombreMesa = comanda.mesa || comanda.mesa_nombre || `Mesa #${comanda.mesa_id || comanda.id}`;
+
+            card.innerHTML = `
+                <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="font-black text-lg text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-chair text-indigo-500"></i> ${nombreMesa}
+                    </h3>
+                    ${badgeHTML}
+                </div>
+                <div class="p-5">
+                    <div class="space-y-1">
+                        ${itemsHTML}
+                    </div>
+                </div>
+            `;
+            contenedor.appendChild(card);
+        });
+
+    } catch (error) {
+        console.error("Error al cargar comandas:", error);
+        contenedor.innerHTML = `
+            <div class="text-center text-red-500 mt-10">
+                <i class="fas fa-exclamation-triangle text-4xl mb-3"></i>
+                <p class="font-bold">Error al consultar comandas</p>
+                <p class="text-sm text-gray-500 mt-1">${error.message}</p>
+            </div>`;
+    }
+}
+

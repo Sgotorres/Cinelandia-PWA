@@ -105,8 +105,8 @@
         
         <div class="flex items-center gap-4">
             <div class="flex flex-col text-right">
-                <span class="text-sm font-medium text-gray-600">Angel Torres</span>
-                <span class="text-xs text-green-500 font-semibold"><i class="fas fa-circle text-[8px] mr-1"></i>En turno</span>
+                <span class="text-sm font-medium text-gray-600">Pizza Planeta</span>
+                <span class="text-xs text-green-500 font-semibold"><i class="fas fa-circle text-[8px] mr-1"></i>Activo</span>
             </div>
             <button class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors">
                 <i class="fas fa-bell"></i>
@@ -140,14 +140,10 @@
             <i class="fas fa-chair text-xl mb-1"></i>
             <span class="text-[10px] font-medium">Mesas</span>
         </button>
-        <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors">
+        <!-- Reemplaza el botón de Comandas actual por este: -->
+        <button onclick="abrirModalComandas()" class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors">
             <i class="fas fa-receipt text-xl mb-1"></i>
             <span class="text-[10px] font-medium">Comandas</span>
-        </button>
-        <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors relative">
-            <i class="fas fa-fire-burner text-xl mb-1"></i>
-            <span class="absolute top-0 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            <span class="text-[10px] font-medium">Cocina</span>
         </button>
         <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors">
             <i class="fas fa-cog text-xl mb-1"></i>
@@ -259,5 +255,26 @@
         </div>
     </div>
     <script type="module" src="js/mesero.js"></script>
+    <!-- Modal de Comandas Activas (Visualización tipo Admin) -->
+<div id="modal-ver-comandas" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[70] hidden flex justify-center items-center transition-opacity duration-300 opacity-0">
+    <!-- Panel responsivo: bottom sheet en móvil, modal centrado en PC -->
+    <div id="panel-ver-comandas" class="bg-slate-50 w-full md:w-3/4 lg:w-1/2 h-[85vh] md:h-[75vh] rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-300 absolute bottom-0 md:relative">
+        
+        <header class="bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center rounded-t-3xl md:rounded-t-3xl shrink-0">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">Comandas Activas</h2>
+                <p class="text-sm text-gray-500">Pedidos actualmente en proceso</p>
+            </div>
+            <button onclick="cerrarModalComandas()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-600 flex items-center justify-center transition-colors text-xl">
+                <i class="fas fa-times"></i>
+            </button>
+        </header>
+
+        <!-- Contenedor de la lista de pedidos -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50" id="contenedor-lista-comandas">
+            <!-- El contenido se inyectará aquí desde JS -->
+        </div>
+    </div>
+</div>
 </body>
 </html>
